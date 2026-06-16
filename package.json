@@ -1,0 +1,62 @@
+{
+  "name": "devdesk",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Minimalist, high-performance developer workstation HUD with integrated terminal, task manager, and Git dashboard",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "desktop": "electron .",
+    "desktop:dev": "concurrently -k \"vite\" \"wait-on tcp:1420 && electron .\"",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mithun-024/devdesk.git"
+  },
+  "keywords": [
+    "developer-tools",
+    "tauri",
+    "desktop-app",
+    "rust",
+    "react",
+    "terminal",
+    "git",
+    "task-manager",
+    "workstation"
+  ],
+  "author": "Mithun <gmithun2006@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/xterm": "^5.5.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.460.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.7",
+    "electron": "^45.2.3",
+    "esbuild": "^0.28.2",
+    "node-pty": "^1.1.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.1",
+    "wait-on": "^9.5.1"
+  }
+}
