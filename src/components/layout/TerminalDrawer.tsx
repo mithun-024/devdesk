@@ -2,18 +2,20 @@ import React, { useEffect, useRef } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { X, Terminal as TerminalIcon, Maximize2 } from 'lucide-react';
+import { X, Terminal as TerminalIcon, Maximize2, FolderOpen } from 'lucide-react';
 
 interface TerminalDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenFullscreen: () => void;
+  workspacePath?: string;
 }
 
 export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
   isOpen,
   onClose,
   onOpenFullscreen,
+  workspacePath,
 }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermInstance = useRef<XTerm | null>(null);
@@ -30,10 +32,18 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
         fontSize: 12,
         fontFamily: 'JetBrains Mono, Menlo, monospace',
         theme: {
-          background: '#000000',
-          foreground: '#f8fafc',
-          cursor: '#00ff66',
-          selectionBackground: 'rgba(0, 255, 102, 0.25)',
+          background: '#16161e',
+          foreground: '#c0caf5',
+          cursor: '#7dcfff',
+          selectionBackground: 'rgba(122, 162, 247, 0.3)',
+          black: '#15161e',
+          red: '#f7768e',
+          green: '#9ece6a',
+          yellow: '#e0af68',
+          blue: '#7aa2f7',
+          magenta: '#bb9af7',
+          cyan: '#7dcfff',
+          white: '#c0caf5',
         },
       });
 
@@ -46,7 +56,7 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
       fitAddon.current = fit;
 
       if (window.electronBridge) {
-        window.electronBridge.createPty(ptyId, term.cols, term.rows);
+        window.electronBridge.createPty(ptyId, term.cols, term.rows, workspacePath);
 
         window.electronBridge.onPtyData((id, data) => {
           if (id === ptyId) {
@@ -57,42 +67,45 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
         term.onData((data) => {
           window.electronBridge?.writePty(ptyId, data);
         });
-      } else {
-        term.writeln('\x1b[38;2;0;255;102m[DevDesk Native Terminal Drawer]\x1b[0m');
       }
     } else {
       setTimeout(() => fitAddon.current?.fit(), 100);
     }
-  }, [isOpen]);
+  }, [isOpen, workspacePath]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="h-64 border-t border-neutral-800 bg-black flex flex-col z-30 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.9)] animate-slide-down select-none">
-      <div className="h-8 px-3 border-b border-neutral-900 bg-neutral-950 flex items-center justify-between text-xs font-mono">
-        <div className="flex items-center gap-2 text-neutral-300">
-          <TerminalIcon className="w-3.5 h-3.5 text-green-400" />
-          <span>Quick Terminal (Drawer)</span>
-          <span className="text-[10px] text-neutral-500 font-sans">Press Ctrl + ` to toggle</span>
+    <div className="h-64 border-t border-[#292e42] bg-[#16161e] flex flex-col z-30 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] animate-slide-down select-none font-sans">
+      <div className="h-8 px-3 border-b border-[#292e42] bg-[#1a1b26] flex items-center justify-between text-xs font-mono">
+        <div className="flex items-center gap-2 text-[#c0caf5]">
+          <TerminalIcon className="w-3.5 h-3.5 text-[#73daca]" />
+          <span>Quick Terminal</span>
+          {workspacePath && (
+            <span className="text-[10px] text-[#565f89] flex items-center gap-1">
+              <FolderOpen className="w-3 h-3 text-[#7dcfff]" />
+              <span className="max-w-[200px] truncate">{workspacePath}</span>
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={onOpenFullscreen}
-            className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
+            className="p-1 rounded text-[#9aa5ce] hover:text-white hover:bg-[#1f2335] transition-colors"
             title="Open Fullscreen Terminal"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onClose}
-            className="p-1 rounded text-neutral-400 hover:text-pink-400 hover:bg-pink-950/30 transition-colors"
+            className="p-1 rounded text-[#9aa5ce] hover:text-[#f7768e] hover:bg-[#f7768e]/10 transition-colors"
             title="Close Drawer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
-      <div className="flex-1 p-2 bg-black overflow-hidden">
+      <div className="flex-1 p-2 bg-[#16161e] overflow-hidden">
         <div ref={terminalRef} className="h-full w-full" />
       </div>
     </div>

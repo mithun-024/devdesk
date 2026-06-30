@@ -29,15 +29,15 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#16161e]/80 backdrop-blur-sm animate-fade-in font-sans">
       <div
-        className={`w-full ${maxWidth} bg-black border border-neutral-800 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[85vh] animate-slide-down`}
+        className={`w-full ${maxWidth} bg-[#1a1b26] border border-[#292e42] rounded-xl shadow-[0_0_50px_rgba(22,22,30,0.95)] overflow-hidden flex flex-col max-h-[85vh] animate-slide-down`}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-900 bg-neutral-950">
-          <h3 className="text-sm font-semibold text-neutral-100 tracking-tight">{title}</h3>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#292e42] bg-[#16161e]">
+          <h3 className="text-sm font-semibold text-white tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-neutral-400 hover:text-pink-400 hover:bg-neutral-900 transition-all"
+            className="p-1 rounded-md text-[#9aa5ce] hover:text-[#f7768e] hover:bg-[#1f2335] transition-all"
           >
             <X className="w-4 h-4" />
           </button>

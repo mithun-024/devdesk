@@ -17,15 +17,15 @@ export const Badge: React.FC<BadgeProps> = ({
   const sizeClasses = size === 'sm' ? 'text-[11px] px-1.5 py-0.5' : 'text-xs px-2 py-0.5';
 
   const variantMap: Record<string, string> = {
-    default: 'bg-black text-neutral-300 border-neutral-800',
-    urgent: 'bg-black text-pink-400 border-pink-500/40 shadow-[0_0_8px_rgba(255,0,127,0.25)]',
-    high: 'bg-black text-amber-400 border-amber-500/40 shadow-[0_0_8px_rgba(255,184,0,0.25)]',
-    medium: 'bg-black text-cyan-400 border-cyan-500/40 shadow-[0_0_8px_rgba(0,240,255,0.25)]',
-    low: 'bg-black text-neutral-400 border-neutral-800',
-    success: 'bg-black text-emerald-400 border-emerald-500/40 shadow-[0_0_8px_rgba(0,255,102,0.25)]',
-    warning: 'bg-black text-amber-400 border-amber-500/40',
-    info: 'bg-black text-cyan-400 border-cyan-500/40',
-    purple: 'bg-black text-purple-400 border-purple-500/40 shadow-[0_0_8px_rgba(176,38,255,0.25)]',
+    default: 'bg-[#1f2335] text-[#c0caf5] border-[#292e42]',
+    urgent: 'bg-[#1f2335] text-[#f7768e] border-[#f7768e]/40 shadow-[0_0_8px_rgba(247,118,142,0.2)]',
+    high: 'bg-[#1f2335] text-[#ff9e64] border-[#ff9e64]/40 shadow-[0_0_8px_rgba(255,158,100,0.2)]',
+    medium: 'bg-[#1f2335] text-[#7aa2f7] border-[#7aa2f7]/40 shadow-[0_0_8px_rgba(122,162,247,0.2)]',
+    low: 'bg-[#1f2335] text-[#565f89] border-[#292e42]',
+    success: 'bg-[#1f2335] text-[#9ece6a] border-[#9ece6a]/40 shadow-[0_0_8px_rgba(158,206,106,0.2)]',
+    warning: 'bg-[#1f2335] text-[#e0af68] border-[#e0af68]/40',
+    info: 'bg-[#1f2335] text-[#7dcfff] border-[#7dcfff]/40',
+    purple: 'bg-[#1f2335] text-[#bb9af7] border-[#bb9af7]/40 shadow-[0_0_8px_rgba(187,154,247,0.2)]',
   };
 
   return (
@@ -52,8 +52,8 @@ export const StatusBadge: React.FC<{ status: TaskStatus }> = ({ status }) => {
   const statusConfig: Record<TaskStatus, { label: string; variant: BadgeProps['variant'] }> = {
     backlog: { label: 'Backlog', variant: 'low' },
     todo: { label: 'Todo', variant: 'info' },
-    in_progress: { label: 'In Progress', variant: 'purple' },
-    in_review: { label: 'In Review', variant: 'warning' },
+    in_progress: { label: 'In Progress', variant: 'high' },
+    in_review: { label: 'In Review', variant: 'purple' },
     done: { label: 'Done', variant: 'success' },
   };
 

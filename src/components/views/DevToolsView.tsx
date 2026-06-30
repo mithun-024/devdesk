@@ -6,6 +6,7 @@ import {
   Regex as RegexIcon,
   Copy,
   AlertCircle,
+  Wrench,
 } from 'lucide-react';
 
 type ToolTab = 'json' | 'jwt' | 'base64' | 'regex';
@@ -16,7 +17,7 @@ export const DevToolsView: React.FC<{
   const [activeTool, setActiveTool] = useState<ToolTab>('json');
 
   // JSON State
-  const [jsonInput, setJsonInput] = useState('{\n  "service": "devdesk",\n  "status": "online",\n  "version": 1,\n  "features": ["terminal", "tasks", "git"]\n}');
+  const [jsonInput, setJsonInput] = useState('{\n  "service": "devdesk",\n  "status": "online",\n  "theme": "tokyo-night",\n  "features": ["sqlite", "keychain", "git", "pty"]\n}');
   const [jsonOutput, setJsonOutput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
 
@@ -26,7 +27,7 @@ export const DevToolsView: React.FC<{
   const [jwtPayload, setJwtPayload] = useState('');
 
   // Base64 State
-  const [b64Input, setB64Input] = useState('Hello DevDesk OLED Workstation!');
+  const [b64Input, setB64Input] = useState('Hello DevDesk Tokyo Night Workstation!');
   const [b64Output, setB64Output] = useState('');
 
   // Regex State
@@ -60,18 +61,14 @@ export const DevToolsView: React.FC<{
     try {
       const parts = jwtInput.trim().split('.');
       if (parts.length < 2) {
-        setJwtHeader('Invalid JWT format (expected 3 dot-separated parts)');
-        setJwtPayload('');
-        return;
+        throw new Error('Invalid JWT format (expected 3 dot-separated segments)');
       }
-      const headerDecoded = atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'));
-      const payloadDecoded = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-
-      setJwtHeader(JSON.stringify(JSON.parse(headerDecoded), null, 2));
-      setJwtPayload(JSON.stringify(JSON.parse(payloadDecoded), null, 2));
+      const header = JSON.parse(atob(parts[0]));
+      const payload = JSON.parse(atob(parts[1]));
+      setJwtHeader(JSON.stringify(header, null, 2));
+      setJwtPayload(JSON.stringify(payload, null, 2));
     } catch (e: any) {
-      setJwtHeader('Error decoding JWT: ' + e.message);
-      setJwtPayload('');
+      onShowToast('JWT Parse Error', e.message, 'error');
     }
   };
 
@@ -107,27 +104,28 @@ export const DevToolsView: React.FC<{
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-black overflow-hidden select-none font-sans">
+    <div className="flex-1 flex flex-col h-full bg-[#16161e] text-[#c0caf5] overflow-hidden select-none font-sans">
       {/* Header Bar */}
-      <div className="px-6 py-4 border-b border-neutral-900 bg-neutral-950 flex items-center justify-between shrink-0">
+      <div className="h-14 px-6 border-b border-[#292e42] bg-[#1a1b26] flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-base font-semibold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-[#bb9af7]" />
             Developer Offline Toolbox
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black text-purple-400 border border-purple-500/30">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#bb9af7]/15 text-[#bb9af7] border border-[#bb9af7]/30">
               Offline & Private
             </span>
           </h1>
-          <p className="text-[11px] text-neutral-500">JSON, JWT, Base64 & Regex analyzers</p>
+          <p className="text-[11px] text-[#565f89]">JSON, JWT, Base64 & Regex analyzers</p>
         </div>
 
         {/* Tab switcher */}
-        <div className="flex items-center bg-black border border-neutral-800 rounded-lg p-0.5 text-xs font-mono">
+        <div className="flex items-center bg-[#16161e] border border-[#292e42] rounded-lg p-0.5 text-xs font-mono">
           <button
             onClick={() => setActiveTool('json')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${
               activeTool === 'json'
-                ? 'bg-neutral-900 text-cyan-400 border border-cyan-500/30 shadow-[0_0_8px_rgba(0,240,255,0.2)]'
-                : 'text-neutral-400 hover:text-white'
+                ? 'bg-[#24283b] text-[#7dcfff] border border-[#7dcfff]/30 shadow-[0_0_8px_rgba(125,207,255,0.2)]'
+                : 'text-[#9aa5ce] hover:text-white'
             }`}
           >
             <Braces className="w-3.5 h-3.5" /> JSON
@@ -139,8 +137,8 @@ export const DevToolsView: React.FC<{
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${
               activeTool === 'jwt'
-                ? 'bg-neutral-900 text-purple-400 border border-purple-500/30 shadow-[0_0_8px_rgba(176,38,255,0.2)]'
-                : 'text-neutral-400 hover:text-white'
+                ? 'bg-[#24283b] text-[#bb9af7] border border-[#bb9af7]/30 shadow-[0_0_8px_rgba(187,154,247,0.2)]'
+                : 'text-[#9aa5ce] hover:text-white'
             }`}
           >
             <Key className="w-3.5 h-3.5" /> JWT
@@ -149,8 +147,8 @@ export const DevToolsView: React.FC<{
             onClick={() => setActiveTool('base64')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${
               activeTool === 'base64'
-                ? 'bg-neutral-900 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(0,255,102,0.2)]'
-                : 'text-neutral-400 hover:text-white'
+                ? 'bg-[#24283b] text-[#9ece6a] border border-[#9ece6a]/30 shadow-[0_0_8px_rgba(158,206,106,0.2)]'
+                : 'text-[#9aa5ce] hover:text-white'
             }`}
           >
             <Binary className="w-3.5 h-3.5" /> Base64
@@ -162,8 +160,8 @@ export const DevToolsView: React.FC<{
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${
               activeTool === 'regex'
-                ? 'bg-neutral-900 text-amber-400 border border-amber-500/30 shadow-[0_0_8px_rgba(255,184,0,0.2)]'
-                : 'text-neutral-400 hover:text-white'
+                ? 'bg-[#24283b] text-[#ff9e64] border border-[#ff9e64]/30 shadow-[0_0_8px_rgba(255,158,100,0.2)]'
+                : 'text-[#9aa5ce] hover:text-white'
             }`}
           >
             <RegexIcon className="w-3.5 h-3.5" /> Regex
@@ -171,23 +169,23 @@ export const DevToolsView: React.FC<{
         </div>
       </div>
 
-      {/* Main Tool Content */}
-      <div className="flex-1 overflow-auto p-6 font-mono text-xs bg-black">
+      {/* Main Workspace Area */}
+      <div className="flex-1 p-6 overflow-hidden bg-[#16161e]">
         {activeTool === 'json' && (
           <div className="grid grid-cols-2 gap-4 h-full">
-            <div className="flex flex-col h-full bg-black border border-neutral-900 rounded-lg overflow-hidden p-3 space-y-2">
-              <div className="flex items-center justify-between text-neutral-400 text-[11px]">
-                <span>Input JSON</span>
-                <div className="flex gap-1.5">
+            <div className="flex flex-col bg-[#1a1b26] border border-[#292e42] rounded-xl p-4 overflow-hidden">
+              <div className="flex items-center justify-between pb-3 border-b border-[#292e42] mb-3">
+                <span className="text-xs font-mono text-[#9aa5ce]">JSON Input</span>
+                <div className="flex gap-2">
                   <button
                     onClick={() => handleFormatJson(2)}
-                    className="px-2 py-1 rounded bg-black hover:bg-neutral-900 text-neutral-300 border border-neutral-800"
+                    className="px-2.5 py-1 rounded bg-[#1f2335] hover:bg-[#24283b] border border-[#292e42] text-xs text-[#7dcfff] font-mono transition-colors"
                   >
-                    Format (2s)
+                    Beautify
                   </button>
                   <button
                     onClick={handleMinifyJson}
-                    className="px-2 py-1 rounded bg-black hover:bg-neutral-900 text-neutral-300 border border-neutral-800"
+                    className="px-2.5 py-1 rounded bg-[#1f2335] hover:bg-[#24283b] border border-[#292e42] text-xs text-[#9aa5ce] font-mono transition-colors"
                   >
                     Minify
                   </button>
@@ -196,65 +194,67 @@ export const DevToolsView: React.FC<{
               <textarea
                 value={jsonInput}
                 onChange={(e) => setJsonInput(e.target.value)}
-                className="flex-1 w-full bg-black border border-neutral-800 rounded-lg p-3 text-neutral-200 focus:outline-none focus:border-cyan-400/50 font-mono resize-none leading-relaxed"
+                placeholder="Paste JSON here..."
+                className="flex-1 bg-transparent text-[#c0caf5] font-mono text-xs outline-none resize-none leading-relaxed"
               />
               {jsonError && (
-                <div className="text-pink-400 text-[11px] flex items-center gap-1.5">
+                <div className="mt-2 p-2 rounded bg-[#f7768e]/10 border border-[#f7768e]/30 text-[#f7768e] text-xs flex items-center gap-2">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  {jsonError}
+                  <span className="font-mono">{jsonError}</span>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col h-full bg-black border border-neutral-900 rounded-lg overflow-hidden p-3 space-y-2">
-              <div className="flex items-center justify-between text-neutral-400 text-[11px]">
-                <span>Formatted Output</span>
+            <div className="flex flex-col bg-[#1a1b26] border border-[#292e42] rounded-xl p-4 overflow-hidden">
+              <div className="flex items-center justify-between pb-3 border-b border-[#292e42] mb-3">
+                <span className="text-xs font-mono text-[#9aa5ce]">Formatted Output</span>
                 {jsonOutput && (
                   <button
                     onClick={() => copyToClipboard(jsonOutput)}
-                    className="flex items-center gap-1 px-2 py-1 rounded bg-black hover:bg-neutral-900 text-neutral-300 border border-neutral-800"
+                    className="flex items-center gap-1 text-xs text-[#7dcfff] hover:underline font-mono"
                   >
                     <Copy className="w-3 h-3" /> Copy
                   </button>
                 )}
               </div>
-              <textarea
-                readOnly
-                value={jsonOutput}
-                placeholder="Formatted output will appear here..."
-                className="flex-1 w-full bg-black border border-neutral-800 rounded-lg p-3 text-emerald-400 font-mono resize-none leading-relaxed focus:outline-none"
-              />
+              <pre className="flex-1 overflow-auto text-[#9ece6a] font-mono text-xs leading-relaxed">
+                {jsonOutput || '// Output will appear here...'}
+              </pre>
             </div>
           </div>
         )}
 
         {activeTool === 'jwt' && (
-          <div className="space-y-4 max-w-4xl mx-auto">
-            <div className="bg-black border border-neutral-900 rounded-lg p-4 space-y-2">
-              <label className="block text-neutral-300 font-medium">Encoded JWT Token</label>
-              <textarea
-                rows={3}
+          <div className="flex flex-col h-full space-y-4">
+            <div className="p-4 bg-[#1a1b26] border border-[#292e42] rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-[#9aa5ce]">Encoded JWT Token</span>
+                <button
+                  onClick={handleDecodeJwt}
+                  className="px-3 py-1 rounded bg-[#bb9af7]/20 hover:bg-[#bb9af7]/30 border border-[#bb9af7]/40 text-xs text-[#bb9af7] font-medium transition-colors"
+                >
+                  Decode Token
+                </button>
+              </div>
+              <input
+                type="text"
                 value={jwtInput}
-                onChange={(e) => {
-                  setJwtInput(e.target.value);
-                  setTimeout(handleDecodeJwt, 50);
-                }}
-                className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-purple-400 focus:outline-none focus:border-purple-500/50 font-mono text-xs"
+                onChange={(e) => setJwtInput(e.target.value)}
+                className="w-full bg-[#16161e] border border-[#292e42] rounded-lg p-2.5 text-xs font-mono text-white outline-none focus:border-[#bb9af7]"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-black border border-neutral-900 rounded-lg p-4 space-y-2">
-                <span className="text-pink-400 font-semibold block text-[11px]">HEADER: ALGORITHM & TOKEN TYPE</span>
-                <pre className="p-3 bg-black border border-neutral-900 rounded-lg text-pink-300 overflow-x-auto">
-                  {jwtHeader || '{\n  "alg": "HS256",\n  "typ": "JWT"\n}'}
+            <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
+              <div className="bg-[#1a1b26] border border-[#292e42] rounded-xl p-4 flex flex-col overflow-hidden">
+                <span className="text-xs font-mono text-[#7dcfff] pb-2 border-b border-[#292e42] mb-2">Header</span>
+                <pre className="flex-1 overflow-auto text-xs font-mono text-[#7dcfff] leading-relaxed">
+                  {jwtHeader || '// Header'}
                 </pre>
               </div>
-
-              <div className="bg-black border border-neutral-900 rounded-lg p-4 space-y-2">
-                <span className="text-cyan-400 font-semibold block text-[11px]">PAYLOAD: DATA CLAIMS</span>
-                <pre className="p-3 bg-black border border-neutral-900 rounded-lg text-cyan-300 overflow-x-auto">
-                  {jwtPayload || '{\n  "sub": "user_id"\n}'}
+              <div className="bg-[#1a1b26] border border-[#292e42] rounded-xl p-4 flex flex-col overflow-hidden">
+                <span className="text-xs font-mono text-[#bb9af7] pb-2 border-b border-[#292e42] mb-2">Payload</span>
+                <pre className="flex-1 overflow-auto text-xs font-mono text-[#bb9af7] leading-relaxed">
+                  {jwtPayload || '// Payload'}
                 </pre>
               </div>
             </div>
@@ -263,101 +263,104 @@ export const DevToolsView: React.FC<{
 
         {activeTool === 'base64' && (
           <div className="grid grid-cols-2 gap-4 h-full">
-            <div className="bg-black border border-neutral-900 rounded-lg p-4 flex flex-col space-y-2">
-              <div className="flex items-center justify-between text-neutral-400 text-[11px]">
-                <span>Plaintext / Input</span>
+            <div className="flex flex-col bg-[#1a1b26] border border-[#292e42] rounded-xl p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#292e42] mb-3">
+                <span className="text-xs font-mono text-[#9aa5ce]">Text Input</span>
                 <div className="flex gap-2">
-                  <button onClick={handleEncodeB64} className="px-2 py-1 bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border border-emerald-500/30 rounded">
-                    Encode →
+                  <button
+                    onClick={handleEncodeB64}
+                    className="px-2.5 py-1 rounded bg-[#1f2335] hover:bg-[#24283b] border border-[#292e42] text-xs text-[#9ece6a] font-mono transition-colors"
+                  >
+                    Encode
                   </button>
-                  <button onClick={handleDecodeB64} className="px-2 py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 rounded">
-                    Decode ←
+                  <button
+                    onClick={handleDecodeB64}
+                    className="px-2.5 py-1 rounded bg-[#1f2335] hover:bg-[#24283b] border border-[#292e42] text-xs text-[#7dcfff] font-mono transition-colors"
+                  >
+                    Decode
                   </button>
                 </div>
               </div>
               <textarea
                 value={b64Input}
                 onChange={(e) => setB64Input(e.target.value)}
-                className="flex-1 bg-black border border-neutral-800 rounded-lg p-3 text-neutral-200 resize-none focus:outline-none focus:border-cyan-400/50"
+                className="flex-1 bg-transparent text-[#c0caf5] font-mono text-xs outline-none resize-none leading-relaxed"
               />
             </div>
 
-            <div className="bg-black border border-neutral-900 rounded-lg p-4 flex flex-col space-y-2">
-              <div className="flex items-center justify-between text-neutral-400 text-[11px]">
-                <span>Base64 Result</span>
+            <div className="flex flex-col bg-[#1a1b26] border border-[#292e42] rounded-xl p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#292e42] mb-3">
+                <span className="text-xs font-mono text-[#9aa5ce]">Base64 Output</span>
                 {b64Output && (
                   <button
                     onClick={() => copyToClipboard(b64Output)}
-                    className="flex items-center gap-1 px-2 py-1 rounded bg-black hover:bg-neutral-900 text-neutral-300 border border-neutral-800"
+                    className="flex items-center gap-1 text-xs text-[#9ece6a] hover:underline font-mono"
                   >
                     <Copy className="w-3 h-3" /> Copy
                   </button>
                 )}
               </div>
-              <textarea
-                readOnly
-                value={b64Output}
-                className="flex-1 bg-black border border-neutral-800 rounded-lg p-3 text-cyan-300 resize-none focus:outline-none"
-              />
+              <pre className="flex-1 overflow-auto text-[#9ece6a] font-mono text-xs leading-relaxed">
+                {b64Output || '// Encoded or decoded output...'}
+              </pre>
             </div>
           </div>
         )}
 
         {activeTool === 'regex' && (
-          <div className="space-y-4 max-w-4xl mx-auto">
-            <div className="bg-black border border-neutral-900 rounded-lg p-4 space-y-3">
-              <div className="flex gap-2">
+          <div className="flex flex-col h-full space-y-4">
+            <div className="p-4 bg-[#1a1b26] border border-[#292e42] rounded-xl flex gap-3 items-center">
+              <div className="flex-1">
+                <label className="text-[11px] font-mono text-[#9aa5ce] mb-1 block">Regular Expression</label>
                 <input
                   type="text"
                   value={regexPattern}
-                  onChange={(e) => {
-                    setRegexPattern(e.target.value);
-                    setTimeout(handleRunRegex, 50);
-                  }}
-                  placeholder="Regex pattern (e.g. \d+)"
-                  className="flex-1 bg-black border border-neutral-800 rounded-lg px-3 py-2 text-cyan-300 font-mono text-xs focus:outline-none focus:border-cyan-400/50"
+                  onChange={(e) => setRegexPattern(e.target.value)}
+                  className="w-full bg-[#16161e] border border-[#292e42] rounded-lg p-2 text-xs font-mono text-white outline-none focus:border-[#ff9e64]"
                 />
+              </div>
+              <div className="w-24">
+                <label className="text-[11px] font-mono text-[#9aa5ce] mb-1 block">Flags</label>
                 <input
                   type="text"
                   value={regexFlags}
-                  onChange={(e) => {
-                    setRegexFlags(e.target.value);
-                    setTimeout(handleRunRegex, 50);
-                  }}
-                  placeholder="Flags"
-                  className="w-20 bg-black border border-neutral-800 rounded-lg px-3 py-2 text-amber-400 font-mono text-xs text-center focus:outline-none"
+                  onChange={(e) => setRegexFlags(e.target.value)}
+                  className="w-full bg-[#16161e] border border-[#292e42] rounded-lg p-2 text-xs font-mono text-white outline-none focus:border-[#ff9e64]"
+                />
+              </div>
+              <button
+                onClick={handleRunRegex}
+                className="mt-5 px-4 py-2 rounded-lg bg-[#ff9e64]/20 hover:bg-[#ff9e64]/30 border border-[#ff9e64]/40 text-xs font-medium text-[#ff9e64] transition-colors"
+              >
+                Match
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
+              <div className="bg-[#1a1b26] border border-[#292e42] rounded-xl p-4 flex flex-col">
+                <span className="text-xs font-mono text-[#9aa5ce] pb-2 border-b border-[#292e42] mb-2">Test String</span>
+                <textarea
+                  value={regexTestString}
+                  onChange={(e) => setRegexTestString(e.target.value)}
+                  className="flex-1 bg-transparent text-[#c0caf5] font-mono text-xs outline-none resize-none leading-relaxed"
                 />
               </div>
 
-              <textarea
-                rows={4}
-                value={regexTestString}
-                onChange={(e) => {
-                  setRegexTestString(e.target.value);
-                  setTimeout(handleRunRegex, 50);
-                }}
-                placeholder="Test string..."
-                className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-neutral-200 resize-none focus:outline-none focus:border-cyan-400/50 text-xs"
-              />
-            </div>
-
-            <div className="bg-black border border-neutral-900 rounded-lg p-4 space-y-2">
-              <span className="text-emerald-400 font-semibold block text-[11px]">
-                MATCHES FOUND ({regexMatches.length})
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {regexMatches.length === 0 ? (
-                  <span className="text-neutral-600 italic font-mono">No matches</span>
-                ) : (
-                  regexMatches.map((m, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2.5 py-1 rounded bg-black text-emerald-400 border border-emerald-500/30 font-mono shadow-[0_0_8px_rgba(0,255,102,0.15)]"
-                    >
-                      {m}
-                    </span>
-                  ))
-                )}
+              <div className="bg-[#1a1b26] border border-[#292e42] rounded-xl p-4 flex flex-col overflow-hidden">
+                <span className="text-xs font-mono text-[#ff9e64] pb-2 border-b border-[#292e42] mb-2">
+                  Matches ({regexMatches.length})
+                </span>
+                <div className="flex-1 overflow-auto space-y-1.5 font-mono text-xs">
+                  {regexMatches.length === 0 ? (
+                    <div className="text-[#565f89] text-xs italic">No matches found</div>
+                  ) : (
+                    regexMatches.map((m, idx) => (
+                      <div key={idx} className="p-2 rounded bg-[#16161e] border border-[#292e42] text-[#ff9e64]">
+                        {idx + 1}: {m}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

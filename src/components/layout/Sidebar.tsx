@@ -7,9 +7,9 @@ import {
   Terminal,
   Wrench,
   FileText,
+  Settings,
   ChevronLeft,
   ChevronRight,
-  Circle,
 } from 'lucide-react';
 import { ActiveTab } from '../../types';
 
@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     id: ActiveTab;
     label: string;
     icon: React.ReactNode;
-    neonColor: string;
+    iconColor: string;
     indicatorColor: string;
     badge?: number;
     badgeColor?: string;
@@ -45,62 +45,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'workspaces',
       label: 'Workspaces',
       icon: <Layers className="w-4 h-4" />,
-      neonColor: 'text-cyan-400 group-hover:text-cyan-300',
-      indicatorColor: 'bg-cyan-400 shadow-[0_0_8px_rgba(0,240,255,0.8)]',
+      iconColor: 'text-[#7dcfff]',
+      indicatorColor: 'bg-[#7dcfff] shadow-[0_0_8px_rgba(125,207,255,0.7)]',
     },
     {
       id: 'tasks',
       label: 'Tasks',
       icon: <CheckSquare className="w-4 h-4" />,
-      neonColor: 'text-emerald-400 group-hover:text-emerald-300',
-      indicatorColor: 'bg-emerald-400 shadow-[0_0_8px_rgba(0,255,102,0.8)]',
+      iconColor: 'text-[#9ece6a]',
+      indicatorColor: 'bg-[#9ece6a] shadow-[0_0_8px_rgba(158,206,106,0.7)]',
       badge: taskCount,
-      badgeColor: 'bg-black text-emerald-400 border-emerald-500/30',
+      badgeColor: 'bg-[#1f2335] text-[#9ece6a] border-[#9ece6a]/30',
     },
     {
       id: 'git',
       label: 'Git HUD',
       icon: <GitBranch className="w-4 h-4" />,
-      neonColor: 'text-amber-400 group-hover:text-amber-300',
-      indicatorColor: 'bg-amber-400 shadow-[0_0_8px_rgba(255,184,0,0.8)]',
+      iconColor: 'text-[#ff9e64]',
+      indicatorColor: 'bg-[#ff9e64] shadow-[0_0_8px_rgba(255,158,100,0.7)]',
       badge: gitDirtyCount > 0 ? gitDirtyCount : undefined,
-      badgeColor: 'bg-black text-amber-400 border-amber-500/30',
+      badgeColor: 'bg-[#1f2335] text-[#ff9e64] border-[#ff9e64]/30',
     },
     {
       id: 'ports',
       label: 'Ports & PIDs',
       icon: <Activity className="w-4 h-4" />,
-      neonColor: 'text-pink-400 group-hover:text-pink-300',
-      indicatorColor: 'bg-pink-400 shadow-[0_0_8px_rgba(255,0,127,0.8)]',
+      iconColor: 'text-[#f7768e]',
+      indicatorColor: 'bg-[#f7768e] shadow-[0_0_8px_rgba(247,118,142,0.7)]',
       badge: activePortCount,
-      badgeColor: 'bg-black text-pink-400 border-pink-500/30',
+      badgeColor: 'bg-[#1f2335] text-[#f7768e] border-[#f7768e]/30',
     },
     {
       id: 'terminal',
       label: 'Terminal',
       icon: <Terminal className="w-4 h-4" />,
-      neonColor: 'text-green-400 group-hover:text-green-300',
-      indicatorColor: 'bg-green-400 shadow-[0_0_8px_rgba(57,255,20,0.8)]',
+      iconColor: 'text-[#73daca]',
+      indicatorColor: 'bg-[#73daca] shadow-[0_0_8px_rgba(115,218,202,0.7)]',
     },
     {
       id: 'devtools',
       label: 'Dev Tools',
       icon: <Wrench className="w-4 h-4" />,
-      neonColor: 'text-purple-400 group-hover:text-purple-300',
-      indicatorColor: 'bg-purple-400 shadow-[0_0_8px_rgba(176,38,255,0.8)]',
+      iconColor: 'text-[#bb9af7]',
+      indicatorColor: 'bg-[#bb9af7] shadow-[0_0_8px_rgba(187,154,247,0.7)]',
     },
     {
       id: 'scratchpad',
       label: 'Scratchpad',
       icon: <FileText className="w-4 h-4" />,
-      neonColor: 'text-sky-400 group-hover:text-sky-300',
-      indicatorColor: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',
+      iconColor: 'text-[#7aa2f7]',
+      indicatorColor: 'bg-[#7aa2f7] shadow-[0_0_8px_rgba(122,162,247,0.7)]',
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <Settings className="w-4 h-4" />,
+      iconColor: 'text-[#c0caf5]',
+      indicatorColor: 'bg-[#c0caf5] shadow-[0_0_8px_rgba(192,202,245,0.7)]',
     },
   ];
 
   return (
     <aside
-      className={`bg-black border-r border-neutral-900 flex flex-col justify-between transition-all duration-200 select-none shrink-0 ${
+      className={`bg-[#1a1b26] border-r border-[#292e42] flex flex-col justify-between transition-all duration-200 select-none shrink-0 ${
         isCollapsed ? 'w-14' : 'w-52'
       }`}
     >
@@ -114,8 +121,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onTabChange(item.id)}
               className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-xs font-medium transition-all group relative ${
                 isActive
-                  ? 'bg-neutral-950 text-white border border-neutral-800'
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-950/80 border border-transparent'
+                  ? 'bg-[#24283b] text-white border border-[#292e42]'
+                  : 'text-[#9aa5ce] hover:text-white hover:bg-[#1f2335] border border-transparent'
               }`}
               title={isCollapsed ? item.label : undefined}
             >
@@ -125,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
               )}
               <div
-                className={`shrink-0 transition-transform group-hover:scale-110 ${item.neonColor}`}
+                className={`shrink-0 transition-transform group-hover:scale-110 ${item.iconColor}`}
               >
                 {item.icon}
               </div>
@@ -148,23 +155,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer / System status & Collapse Toggle */}
-      <div className="p-2 border-t border-neutral-900 space-y-2">
+      <div className="p-2 border-t border-[#292e42] space-y-2">
         {!isCollapsed && (
-          <div className="px-2.5 py-2 rounded-lg bg-neutral-950 border border-neutral-900 flex items-center gap-2">
+          <div className="px-2.5 py-2 rounded-lg bg-[#16161e] border border-[#292e42] flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_rgba(0,255,102,0.8)]"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ece6a] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ece6a] shadow-[0_0_6px_rgba(158,206,106,0.8)]"></span>
             </span>
             <div className="overflow-hidden">
-              <div className="text-[11px] font-medium text-neutral-300 truncate">DevDesk Host</div>
-              <div className="text-[10px] font-mono text-emerald-400/90">OLED Connected</div>
+              <div className="text-[11px] font-medium text-[#c0caf5] truncate">DevDesk Desktop</div>
+              <div className="text-[10px] font-mono text-[#9ece6a]">Tokyo Night Active</div>
             </div>
           </div>
         )}
 
         <button
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center p-1.5 rounded-lg text-neutral-500 hover:text-neutral-300 hover:bg-neutral-950 transition-colors"
+          className="w-full flex items-center justify-center p-1.5 rounded-lg text-[#565f89] hover:text-[#c0caf5] hover:bg-[#1f2335] transition-colors"
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
