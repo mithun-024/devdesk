@@ -77,46 +77,7 @@ export const TerminalView: React.FC = () => {
         window.electronBridge?.writePty(activeTabId, data);
       });
     } else {
-      // Fallback simulated terminal for browser preview
-      term.writeln('\x1b[38;2;0;255;102m╔════════════════════════════════════════════════════════════════╗\x1b[0m');
-      term.writeln('\x1b[38;2;0;255;102m║   DevDesk Workstation Shell v1.0.0 (OLED Mode)                  ║\x1b[0m');
-      term.writeln('\x1b[38;2;0;255;102m╚════════════════════════════════════════════════════════════════╝\x1b[0m');
-      term.writeln('\x1b[90mRunning in browser preview. Launch via Electron for live Linux shell.\x1b[0m');
-      term.writeln('\x1b[38;2;0;240;255mType "help" for built-in DevDesk commands.\x1b[0m');
-      term.writeln('');
-
-      const prompt = () => {
-        term.write('\x1b[38;2;0;255;102mdevdesk\x1b[0m:\x1b[38;2;0;240;255m~/Documents/project/devdesk\x1b[0m$ ');
-      };
-      prompt();
-
-      let currentLine = '';
-
-      term.onData((data) => {
-        const code = data.charCodeAt(0);
-
-        if (code === 13) {
-          term.writeln('');
-          const trimmed = currentLine.trim();
-          if (trimmed) {
-            handleExecute(trimmed, term);
-          }
-          currentLine = '';
-          prompt();
-        } else if (code === 127) {
-          if (currentLine.length > 0) {
-            currentLine = currentLine.slice(0, -1);
-            term.write('\b \b');
-          }
-        } else if (code === 3) {
-          term.writeln('^C');
-          currentLine = '';
-          prompt();
-        } else if (code >= 32) {
-          currentLine += data;
-          term.write(data);
-        }
-      });
+      term.writeln('\x1b[38;2;255;184;0mInitializing DevDesk Native Desktop Shell...\x1b[0m');
     }
 
     const handleResize = () => {
@@ -133,59 +94,6 @@ export const TerminalView: React.FC = () => {
       term.dispose();
     };
   }, [activeTabId]);
-
-  const handleExecute = (cmd: string, term: XTerm) => {
-    const parts = cmd.split(' ');
-    const command = parts[0].toLowerCase();
-
-    switch (command) {
-      case 'help':
-        term.writeln('\x1b[38;2;255;184;0mAvailable DevDesk Shell Commands:\x1b[0m');
-        term.writeln('  \x1b[38;2;0;255;102mports\x1b[0m       - Scan and display active listening ports');
-        term.writeln('  \x1b[38;2;0;255;102mkill <pid>\x1b[0m  - Terminate process by PID');
-        term.writeln('  \x1b[38;2;0;255;102mgit status\x1b[0m  - Show current branch and staged file changes');
-        term.writeln('  \x1b[38;2;0;255;102mtasks\x1b[0m       - List high-priority active tasks');
-        term.writeln('  \x1b[38;2;0;255;102mclear\x1b[0m       - Clear terminal screen');
-        term.writeln('  \x1b[38;2;0;255;102mwhoami\x1b[0m      - Print current developer profile');
-        break;
-
-      case 'clear':
-        term.clear();
-        break;
-
-      case 'whoami':
-        term.writeln('mithun-024 (DevDesk Admin)');
-        break;
-
-      case 'ports':
-        term.writeln('\x1b[38;2;0;240;255mPORT   PID    PROCESS                STATUS\x1b[0m');
-        term.writeln('1420   48920  devdesk-ui             LISTEN');
-        term.writeln('3000   42109  node (next-server)     LISTEN');
-        term.writeln('5173   38911  vite-dev               LISTEN');
-        term.writeln('8080   19402  python3 -m http.server LISTEN');
-        break;
-
-      case 'tasks':
-        term.writeln('\x1b[38;2;255;0;127m[URGENT]\x1b[0m TASK-101: Migrate IPC bridge to Electron specs');
-        term.writeln('\x1b[38;2;255;184;0m[HIGH]\x1b[0m   TASK-103: Add port killer with process memory detection');
-        term.writeln('\x1b[38;2;0;255;102m[DONE]\x1b[0m   TASK-102: Implement fuzzy search in Command Palette');
-        break;
-
-      case 'git':
-        if (parts[1] === 'status') {
-          term.writeln('On branch main');
-          term.writeln('Your branch is up to date with origin/main.');
-        } else {
-          term.writeln(`Executed git command: ${cmd}`);
-        }
-        break;
-
-      default:
-        term.writeln(`\x1b[90mExecuting host process: ${cmd}...\x1b[0m`);
-        term.writeln(`[Process exited with status 0]`);
-        break;
-    }
-  };
 
   const addTab = () => {
     const newId = `term-${Date.now()}`;

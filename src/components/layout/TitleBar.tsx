@@ -15,49 +15,16 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onToggleTerminal,
   isTerminalOpen,
 }) => {
-  const handleMinimize = async () => {
-    if (window.electronBridge) {
-      window.electronBridge.minimizeWindow();
-      return;
-    }
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().minimize();
-      } catch (e) {
-        console.warn(e);
-      }
-    }
+  const handleMinimize = () => {
+    window.electronBridge?.minimizeWindow();
   };
 
-  const handleMaximize = async () => {
-    if (window.electronBridge) {
-      window.electronBridge.maximizeWindow();
-      return;
-    }
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().toggleMaximize();
-      } catch (e) {
-        console.warn(e);
-      }
-    }
+  const handleMaximize = () => {
+    window.electronBridge?.maximizeWindow();
   };
 
-  const handleClose = async () => {
-    if (window.electronBridge) {
-      window.electronBridge.closeWindow();
-      return;
-    }
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().close();
-      } catch (e) {
-        console.warn(e);
-      }
-    }
+  const handleClose = () => {
+    window.electronBridge?.closeWindow();
   };
 
   return (

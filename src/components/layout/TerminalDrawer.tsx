@@ -58,31 +58,7 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
           window.electronBridge?.writePty(ptyId, data);
         });
       } else {
-        term.writeln('\x1b[38;2;0;255;102m[DevDesk Quick Terminal Drawer - Ctrl+` to toggle]\x1b[0m');
-        term.write('\x1b[38;2;0;255;102mdevdesk\x1b[0m:\x1b[38;2;0;240;255m~\x1b[0m$ ');
-
-        let currentLine = '';
-        term.onData((data) => {
-          const code = data.charCodeAt(0);
-          if (code === 13) {
-            term.writeln('');
-            if (currentLine.trim() === 'clear') {
-              term.clear();
-            } else if (currentLine.trim()) {
-              term.writeln(`\x1b[90mExecuted: ${currentLine}\x1b[0m`);
-            }
-            currentLine = '';
-            term.write('\x1b[38;2;0;255;102mdevdesk\x1b[0m:\x1b[38;2;0;240;255m~\x1b[0m$ ');
-          } else if (code === 127) {
-            if (currentLine.length > 0) {
-              currentLine = currentLine.slice(0, -1);
-              term.write('\b \b');
-            }
-          } else if (code >= 32) {
-            currentLine += data;
-            term.write(data);
-          }
-        });
+        term.writeln('\x1b[38;2;0;255;102m[DevDesk Native Terminal Drawer]\x1b[0m');
       }
     } else {
       setTimeout(() => fitAddon.current?.fit(), 100);

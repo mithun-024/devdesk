@@ -64,7 +64,7 @@ devdesk/
 │   │   ├── ui/         # Badge, Modal, Toast primitives
 │   │   └── views/      # TaskTracker, GitHUD, Terminal, PortInspector, DevTools, Scratchpad
 │   ├── services/
-│   │   ├── bridge.ts   # Unified bridge (Electron IPC -> Tauri -> Simulated fallback)
+│   │   ├── bridge.ts   # Unified bridge (Electron IPC to native host)
 │   │   └── storage.ts  # Local persistence layer
 │   ├── App.tsx         # Root workstation shell
 │   └── main.tsx        # React 19 entry point
@@ -73,24 +73,19 @@ devdesk/
 
 ---
 
-## 🚀 Quick Start (How to Run Tomorrow)
+## 🚀 Quick Start
 
-### 1. Launch the Native Desktop App (Development Mode)
+### 1. Launch DevDesk Desktop (Development Mode)
 ```bash
-npm run desktop:dev
+npm install
+npm run dev
 ```
-*This starts the Vite dev server and opens DevDesk as a native desktop application with live terminal and real port inspection.*
+*Spawns the local Vite renderer and immediately boots the standalone Electron desktop window connected to native PTY `/bin/bash` and host port inspection.*
 
 ### 2. Run in Production Desktop Mode
 ```bash
 npm run build
-npm run desktop
-```
-
-### 3. Run in Web Preview (Browser Only)
-```bash
-npm run dev
-# Open http://localhost:1420
+npm start
 ```
 
 ---

@@ -8,12 +8,12 @@ const SCRATCHPAD_KEY = 'devdesk_scratchpad';
 const DEFAULT_TASKS: Task[] = [
   {
     id: 'TASK-101',
-    title: 'Migrate IPC bridge to Tauri 2.0 specs',
-    description: 'Ensure all commands use typed serde structs and async response handlers.',
+    title: 'Migrate IPC bridge to Electron specs',
+    description: 'Ensure all commands use typed IPC handlers and async response channels.',
     status: 'in_progress',
     priority: 'urgent',
-    tags: ['rust', 'tauri', 'core'],
-    branch: 'feat/tauri-v2-ipc',
+    tags: ['electron', 'pty', 'core'],
+    branch: 'feat/electron-pty-ipc',
     createdAt: '2026-06-20T10:00:00Z',
     updatedAt: '2026-06-24T12:00:00Z',
   },
@@ -80,13 +80,12 @@ const DEFAULT_WORKSPACES: WorkspaceSession[] = [
     rootPath: '/home/mithun/Documents/project/devdesk',
     activeBranch: 'main',
     envVars: {
-      VITE_APP_ENV: 'development',
-      TAURI_DEBUG: 'true',
+      NODE_ENV: 'development',
       PORT: '1420',
-      RUST_LOG: 'info',
+      ELECTRON_ENABLE_LOGGING: '1',
     },
     pinnedPorts: [1420, 3000, 5173, 8080],
-    scratchNotes: '# DevDesk Session Scratchpad\n\n- [x] Configure Linear dark theme HUD\n- [x] Command Palette with Ctrl+K\n- [ ] Wire native sysinfo port killer\n- [ ] Verify conventional commit messages',
+    scratchNotes: '# DevDesk Session Scratchpad\n\n- [x] Configure OLED black theme HUD\n- [x] Command Palette with Ctrl+K\n- [x] Wire native PTY & port scanner\n- [x] Standalone Linux desktop application',
     updatedAt: new Date().toISOString(),
   },
   {
@@ -147,11 +146,9 @@ export const getStoredScratchpad = (): string => {
 - Automatically saved in real-time
 - Use \`Ctrl + K\` to jump to any tool or action
 
-\`\`\`rust
+\`\`\`typescript
 // Fast port scan prototype
-fn scan_ports() -> Vec<u16> {
-    vec![1420, 3000, 5173, 8080]
-}
+const ports = [1420, 3000, 5173, 8080];
 \`\`\`
 `;
 };
