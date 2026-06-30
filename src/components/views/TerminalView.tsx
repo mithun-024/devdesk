@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { Terminal as TerminalIcon, Plus, Trash2, Maximize2, RefreshCw } from 'lucide-react';
+import { Terminal as TerminalIcon, Plus, Trash2, RefreshCw } from 'lucide-react';
 
 interface TerminalTab {
   id: string;
@@ -23,32 +23,32 @@ export const TerminalView: React.FC = () => {
   useEffect(() => {
     if (!terminalRef.current) return;
 
-    // Initialize xterm
+    // Initialize xterm with pure OLED black background and retro neon green cursor
     const term = new XTerm({
       cursorBlink: true,
       cursorStyle: 'bar',
       fontSize: 13,
       fontFamily: 'JetBrains Mono, Menlo, monospace',
       theme: {
-        background: '#090a0f',
-        foreground: '#e2e8f0',
-        cursor: '#6366f1',
-        selectionBackground: 'rgba(99, 102, 241, 0.3)',
-        black: '#0f172a',
-        red: '#f43f5e',
-        green: '#10b981',
-        yellow: '#f59e0b',
-        blue: '#3b82f6',
-        magenta: '#a855f7',
-        cyan: '#06b6d4',
+        background: '#000000',
+        foreground: '#f8fafc',
+        cursor: '#00ff66',
+        selectionBackground: 'rgba(0, 255, 102, 0.25)',
+        black: '#000000',
+        red: '#ff007f',
+        green: '#00ff66',
+        yellow: '#ffb800',
+        blue: '#00f0ff',
+        magenta: '#b026ff',
+        cyan: '#00f0ff',
         white: '#f8fafc',
-        brightBlack: '#334155',
-        brightRed: '#fb7185',
-        brightGreen: '#34d399',
-        brightYellow: '#fbbf24',
-        brightBlue: '#60a5fa',
-        brightMagenta: '#c084fc',
-        brightCyan: '#22d3ee',
+        brightBlack: '#262626',
+        brightRed: '#ff3399',
+        brightGreen: '#33ff88',
+        brightYellow: '#ffcc33',
+        brightBlue: '#33f3ff',
+        brightMagenta: '#c44dff',
+        brightCyan: '#33f3ff',
         brightWhite: '#ffffff',
       },
     });
@@ -78,15 +78,15 @@ export const TerminalView: React.FC = () => {
       });
     } else {
       // Fallback simulated terminal for browser preview
-      term.writeln('\x1b[38;2;99;102;241m╔════════════════════════════════════════════════════════════════╗\x1b[0m');
-      term.writeln('\x1b[38;2;99;102;241m║   DevDesk Workstation Shell v1.0.0 (Browser Preview Mode)       ║\x1b[0m');
-      term.writeln('\x1b[38;2;99;102;241m╚════════════════════════════════════════════════════════════════╝\x1b[0m');
+      term.writeln('\x1b[38;2;0;255;102m╔════════════════════════════════════════════════════════════════╗\x1b[0m');
+      term.writeln('\x1b[38;2;0;255;102m║   DevDesk Workstation Shell v1.0.0 (OLED Mode)                  ║\x1b[0m');
+      term.writeln('\x1b[38;2;0;255;102m╚════════════════════════════════════════════════════════════════╝\x1b[0m');
       term.writeln('\x1b[90mRunning in browser preview. Launch via Electron for live Linux shell.\x1b[0m');
-      term.writeln('\x1b[36mType "help" for built-in DevDesk commands.\x1b[0m');
+      term.writeln('\x1b[38;2;0;240;255mType "help" for built-in DevDesk commands.\x1b[0m');
       term.writeln('');
 
       const prompt = () => {
-        term.write('\x1b[38;2;16;185;129mdevdesk\x1b[0m:\x1b[38;2;99;102;241m~/Documents/project/devdesk\x1b[0m$ ');
+        term.write('\x1b[38;2;0;255;102mdevdesk\x1b[0m:\x1b[38;2;0;240;255m~/Documents/project/devdesk\x1b[0m$ ');
       };
       prompt();
 
@@ -96,7 +96,6 @@ export const TerminalView: React.FC = () => {
         const code = data.charCodeAt(0);
 
         if (code === 13) {
-          // Enter
           term.writeln('');
           const trimmed = currentLine.trim();
           if (trimmed) {
@@ -105,13 +104,11 @@ export const TerminalView: React.FC = () => {
           currentLine = '';
           prompt();
         } else if (code === 127) {
-          // Backspace
           if (currentLine.length > 0) {
             currentLine = currentLine.slice(0, -1);
             term.write('\b \b');
           }
         } else if (code === 3) {
-          // Ctrl+C
           term.writeln('^C');
           currentLine = '';
           prompt();
@@ -143,13 +140,13 @@ export const TerminalView: React.FC = () => {
 
     switch (command) {
       case 'help':
-        term.writeln('\x1b[33mAvailable DevDesk Shell Commands:\x1b[0m');
-        term.writeln('  \x1b[32mports\x1b[0m       - Scan and display active listening ports');
-        term.writeln('  \x1b[32mkill <pid>\x1b[0m  - Terminate process by PID');
-        term.writeln('  \x1b[32mgit status\x1b[0m  - Show current branch and staged file changes');
-        term.writeln('  \x1b[32mtasks\x1b[0m       - List high-priority active tasks');
-        term.writeln('  \x1b[32mclear\x1b[0m       - Clear terminal screen');
-        term.writeln('  \x1b[32mwhoami\x1b[0m      - Print current developer profile');
+        term.writeln('\x1b[38;2;255;184;0mAvailable DevDesk Shell Commands:\x1b[0m');
+        term.writeln('  \x1b[38;2;0;255;102mports\x1b[0m       - Scan and display active listening ports');
+        term.writeln('  \x1b[38;2;0;255;102mkill <pid>\x1b[0m  - Terminate process by PID');
+        term.writeln('  \x1b[38;2;0;255;102mgit status\x1b[0m  - Show current branch and staged file changes');
+        term.writeln('  \x1b[38;2;0;255;102mtasks\x1b[0m       - List high-priority active tasks');
+        term.writeln('  \x1b[38;2;0;255;102mclear\x1b[0m       - Clear terminal screen');
+        term.writeln('  \x1b[38;2;0;255;102mwhoami\x1b[0m      - Print current developer profile');
         break;
 
       case 'clear':
@@ -161,7 +158,7 @@ export const TerminalView: React.FC = () => {
         break;
 
       case 'ports':
-        term.writeln('\x1b[34mPORT   PID    PROCESS                STATUS\x1b[0m');
+        term.writeln('\x1b[38;2;0;240;255mPORT   PID    PROCESS                STATUS\x1b[0m');
         term.writeln('1420   48920  devdesk-ui             LISTEN');
         term.writeln('3000   42109  node (next-server)     LISTEN');
         term.writeln('5173   38911  vite-dev               LISTEN');
@@ -169,9 +166,9 @@ export const TerminalView: React.FC = () => {
         break;
 
       case 'tasks':
-        term.writeln('\x1b[35m[URGENT]\x1b[0m TASK-101: Migrate IPC bridge to Electron specs');
-        term.writeln('\x1b[33m[HIGH]\x1b[0m   TASK-103: Add port killer with process memory detection');
-        term.writeln('\x1b[32m[DONE]\x1b[0m   TASK-102: Implement fuzzy search in Command Palette');
+        term.writeln('\x1b[38;2;255;0;127m[URGENT]\x1b[0m TASK-101: Migrate IPC bridge to Electron specs');
+        term.writeln('\x1b[38;2;255;184;0m[HIGH]\x1b[0m   TASK-103: Add port killer with process memory detection');
+        term.writeln('\x1b[38;2;0;255;102m[DONE]\x1b[0m   TASK-102: Implement fuzzy search in Command Palette');
         break;
 
       case 'git':
@@ -211,9 +208,9 @@ export const TerminalView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#090a0f] overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-black overflow-hidden select-none">
       {/* Top Bar with Shell Tabs */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.07] bg-[#0d0f17]/70 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-900 bg-neutral-950 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
@@ -223,16 +220,16 @@ export const TerminalView: React.FC = () => {
                 onClick={() => setActiveTabId(tab.id)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
                   isActive
-                    ? 'bg-[#171926] text-white border-indigo-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border-transparent'
+                    ? 'bg-black text-white border-neutral-800 shadow-[0_0_8px_rgba(0,0,0,0.8)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60 border-transparent'
                 }`}
               >
-                <TerminalIcon className={`w-3.5 h-3.5 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <TerminalIcon className={`w-3.5 h-3.5 ${isActive ? 'text-green-400' : 'text-neutral-500'}`} />
                 <span>{tab.title}</span>
                 {tabs.length > 1 && (
                   <button
                     onClick={(e) => closeTab(tab.id, e)}
-                    className="p-0.5 rounded hover:bg-white/10 text-slate-500 hover:text-rose-400"
+                    className="p-0.5 rounded hover:bg-neutral-800 text-neutral-500 hover:text-pink-400"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -242,7 +239,7 @@ export const TerminalView: React.FC = () => {
           })}
           <button
             onClick={addTab}
-            className="flex items-center justify-center p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+            className="flex items-center justify-center p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
             title="Open new shell tab"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -252,7 +249,7 @@ export const TerminalView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => fitAddon.current?.fit()}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.05] rounded-md transition-colors"
+            className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-900 rounded-md transition-colors"
             title="Refit terminal dimension"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -261,7 +258,7 @@ export const TerminalView: React.FC = () => {
       </div>
 
       {/* Terminal Viewport */}
-      <div className="flex-1 p-3 bg-[#090a0f] overflow-hidden relative">
+      <div className="flex-1 p-3 bg-black overflow-hidden relative">
         <div ref={terminalRef} className="w-full h-full" />
       </div>
     </div>

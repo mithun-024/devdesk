@@ -63,7 +63,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   return (
     <header
       style={{ WebkitAppRegion: 'drag' } as any}
-      className="h-10 bg-[#0d0f17] border-b border-white/[0.07] flex items-center justify-between px-3 select-none z-40 shrink-0 font-sans"
+      className="h-10 bg-black border-b border-neutral-900 flex items-center justify-between px-3 select-none z-40 shrink-0 font-sans"
     >
       {/* Brand & Workspace Pill */}
       <div
@@ -71,21 +71,21 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         className="flex items-center gap-3"
       >
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-glow-sm">
-            <span className="font-mono text-[10px] font-bold text-white tracking-tighter">D</span>
+          <div className="w-5 h-5 rounded-md bg-neutral-950 border border-cyan-400/40 flex items-center justify-center shadow-[0_0_8px_rgba(0,240,255,0.25)]">
+            <span className="font-mono text-[10px] font-bold text-cyan-400 tracking-tighter">D</span>
           </div>
-          <span className="font-semibold text-xs tracking-tight text-slate-200">DevDesk</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 bg-white/5 text-slate-400 rounded border border-white/5">
-            v1.0.0
+          <span className="font-semibold text-xs tracking-tight text-white">DevDesk</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 bg-neutral-900 text-neutral-400 rounded border border-neutral-800">
+            oled
           </span>
         </div>
 
-        <div className="h-3.5 w-px bg-white/10 mx-0.5" />
+        <div className="h-3.5 w-px bg-neutral-800 mx-0.5" />
 
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-200/80 border border-white/5 text-[11px] text-slate-300">
-          <Layers className="w-3 h-3 text-indigo-400" />
+        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-300">
+          <Layers className="w-3 h-3 text-cyan-400" />
           <span className="font-medium max-w-[140px] truncate">{activeWorkspace.name}</span>
-          <span className="text-[10px] text-slate-500 font-mono">({activeWorkspace.activeBranch})</span>
+          <span className="text-[10px] text-neutral-500 font-mono">({activeWorkspace.activeBranch})</span>
         </div>
       </div>
 
@@ -96,11 +96,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       >
         <button
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-surface-100/90 border border-white/[0.08] hover:border-indigo-500/30 text-xs text-slate-400 hover:text-slate-200 transition-all group"
+          className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-neutral-950 border border-neutral-800 hover:border-cyan-400/40 text-xs text-neutral-400 hover:text-white transition-all group"
         >
-          <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition-colors" />
+          <Search className="w-3.5 h-3.5 text-neutral-400 group-hover:text-cyan-400 transition-colors" />
           <span className="text-[11px]">Command Palette</span>
-          <kbd className="font-mono text-[10px] bg-white/5 border border-white/10 px-1 rounded text-slate-400">
+          <kbd className="font-mono text-[10px] bg-neutral-900 border border-neutral-800 px-1 rounded text-neutral-400">
             Ctrl K
           </kbd>
         </button>
@@ -109,13 +109,13 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           onClick={onToggleTerminal}
           className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs transition-all ${
             isTerminalOpen
-              ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300 shadow-glow-sm'
-              : 'bg-surface-100/60 border-white/[0.06] text-slate-400 hover:text-slate-200 hover:border-white/10'
+              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(0,255,102,0.2)]'
+              : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700'
           }`}
           title="Toggle Terminal Drawer (Ctrl + `)"
         >
-          <Terminal className="w-3.5 h-3.5" />
-          <kbd className="font-mono text-[10px] text-slate-500">Ctrl `</kbd>
+          <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+          <kbd className="font-mono text-[10px] text-neutral-500">Ctrl `</kbd>
         </button>
       </div>
 
@@ -126,21 +126,21 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       >
         <button
           onClick={handleMinimize}
-          className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
           title="Minimize"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleMaximize}
-          className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
           title="Maximize"
         >
           <Square className="w-3 h-3" />
         </button>
         <button
           onClick={handleClose}
-          className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded text-neutral-400 hover:text-pink-400 hover:bg-pink-950/30 transition-colors"
           title="Close"
         >
           <X className="w-3.5 h-3.5" />

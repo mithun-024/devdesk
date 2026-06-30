@@ -11,27 +11,32 @@
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
-    background-color: #090a0f;
-    color: #f1f5f9;
+    background-color: #000000;
+    color: #f8fafc;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  ::selection {
+    background-color: rgba(0, 240, 255, 0.25);
+    color: #00f0ff;
   }
 }
 
-/* Custom scrollbars */
+/* Barebones OLED hairline scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(13, 15, 23, 0.6);
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: #1f1f1f;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: #333333;
 }

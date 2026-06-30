@@ -216,7 +216,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#090a0f] text-slate-100 overflow-hidden font-sans select-none">
+    <div className="h-screen w-screen flex flex-col bg-black text-slate-100 overflow-hidden font-sans select-none">
       {/* HUD Title Bar */}
       <TitleBar
         activeWorkspace={activeWorkspace}
@@ -237,7 +237,7 @@ export const App: React.FC = () => {
           gitDirtyCount={gitDirtyCount}
         />
 
-        <main className="flex-1 flex flex-col overflow-hidden bg-[#090a0f]">
+        <main className="flex-1 flex flex-col overflow-hidden bg-black">
           {activeTab === 'workspaces' && (
             <WorkspaceManagerView
               workspaces={workspaces}

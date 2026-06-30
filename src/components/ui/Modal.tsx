@@ -29,15 +29,15 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div
-        className={`w-full ${maxWidth} bg-[#12141e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-down`}
+        className={`w-full ${maxWidth} bg-black border border-neutral-800 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[85vh] animate-slide-down`}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-[#171926]/50">
-          <h3 className="text-sm font-semibold text-slate-100 tracking-tight">{title}</h3>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-900 bg-neutral-950">
+          <h3 className="text-sm font-semibold text-neutral-100 tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            className="p-1 rounded-md text-neutral-400 hover:text-pink-400 hover:bg-neutral-900 transition-all"
           >
             <X className="w-4 h-4" />
           </button>

@@ -1,33 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import {
   GitBranch,
-  GitCommit,
   ArrowUp,
   ArrowDown,
+  RefreshCw,
   Plus,
   Minus,
-  RefreshCw,
+  Check,
   Send,
+  GitCommit,
   FileCode,
   FilePlus,
   FileX,
   History,
-  Check,
 } from 'lucide-react';
 import { GitRepoState, GitFileStatus } from '../../types';
-import { fetchGitState, gitStageFile, gitCommitAndPush } from '../../services/bridge';
+import {
+  fetchGitState,
+  gitStageFile,
+  gitCommitAndPush,
+} from '../../services/bridge';
 
 interface GitHudViewProps {
   onShowToast: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
   onRefreshStats: () => void;
 }
 
-export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshStats }) => {
+export const GitHudView: React.FC<GitHudViewProps> = ({
+  onShowToast,
+  onRefreshStats,
+}) => {
   const [gitState, setGitState] = useState<GitRepoState | null>(null);
   const [selectedFile, setSelectedFile] = useState<GitFileStatus | null>(null);
   const [commitMessage, setCommitMessage] = useState('');
-  const [isPushing, setIsPushing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+
+  const conventionalPrefixes = [
+    'feat:',
+    'fix:',
+    'docs:',
+    'refactor:',
+    'style:',
+    'test:',
+    'chore:',
+  ];
 
   const loadGit = async () => {
     setIsLoading(true);
@@ -86,43 +103,41 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
           'success'
         );
         setCommitMessage('');
-        loadGit();
-        onRefreshStats();
+        await loadGit();
       } else {
         onShowToast('Commit failed', res.error, 'error');
       }
     } finally {
       setIsPushing(false);
+      onRefreshStats();
     }
   };
-
-  const conventionalPrefixes = ['feat:', 'fix:', 'refactor:', 'docs:', 'chore:', 'perf:', 'test:'];
 
   const stagedFiles = gitState?.files.filter((f) => f.staged) || [];
   const unstagedFiles = gitState?.files.filter((f) => !f.staged) || [];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#090a0f] overflow-hidden select-none font-sans">
+    <div className="flex-1 flex flex-col h-full bg-black overflow-hidden select-none font-sans">
       {/* Header Bar */}
-      <div className="px-6 py-4 border-b border-white/[0.07] bg-[#0d0f17]/70 flex items-center justify-between shrink-0">
+      <div className="px-6 py-4 border-b border-neutral-900 bg-neutral-950 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-base font-semibold text-white tracking-tight flex items-center gap-2">
               Git Control HUD
-              <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-black border border-neutral-800 text-amber-400">
                 {gitState?.currentBranch || 'main'}
               </span>
             </h1>
-            <p className="text-[11px] text-slate-400">Visual repository status, staging, and diff inspector</p>
+            <p className="text-[11px] text-neutral-500">Repository status, staging, and diff inspector</p>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1 bg-surface-200 border border-white/10 rounded-lg text-xs font-mono">
+          <div className="flex items-center gap-2 px-3 py-1 bg-black border border-neutral-800 rounded-lg text-xs font-mono">
             <span className="flex items-center gap-1 text-emerald-400">
               <ArrowUp className="w-3 h-3" />
               {gitState?.ahead || 0} ahead
             </span>
-            <span className="text-slate-600">|</span>
-            <span className="flex items-center gap-1 text-slate-400">
+            <span className="text-neutral-700">|</span>
+            <span className="flex items-center gap-1 text-neutral-400">
               <ArrowDown className="w-3 h-3" />
               {gitState?.behind || 0} behind
             </span>
@@ -131,7 +146,7 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
 
         <button
           onClick={loadGit}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-200 hover:bg-surface-100 border border-white/10 text-xs text-slate-300 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black hover:bg-neutral-900 border border-neutral-800 text-xs text-neutral-300 transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
@@ -141,18 +156,18 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
       {/* Main Split Body: Left List + Right Diff Viewer */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel: Files & Commit Composer */}
-        <div className="w-80 border-r border-white/[0.07] bg-[#0d0f17] flex flex-col overflow-hidden shrink-0">
+        <div className="w-80 border-r border-neutral-900 bg-black flex flex-col overflow-hidden shrink-0">
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
             {/* Staged Section */}
             <div>
-              <div className="flex items-center justify-between pb-1.5 border-b border-white/5 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center justify-between pb-1.5 border-b border-neutral-900 text-[11px] font-mono text-neutral-400">
                 <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                   <Check className="w-3 h-3" /> Staged Changes ({stagedFiles.length})
                 </span>
                 {stagedFiles.length > 0 && (
                   <button
                     onClick={() => handleStageAll(false)}
-                    className="text-[10px] text-slate-500 hover:text-slate-300"
+                    className="text-[10px] text-neutral-500 hover:text-neutral-300"
                   >
                     Unstage all
                   </button>
@@ -160,7 +175,7 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
               </div>
               <div className="mt-1 space-y-1">
                 {stagedFiles.length === 0 ? (
-                  <div className="py-2 text-[11px] text-slate-600 italic px-2">No staged files</div>
+                  <div className="py-2 text-[11px] text-neutral-600 italic px-2 font-mono">No staged files</div>
                 ) : (
                   stagedFiles.map((file) => (
                     <div
@@ -168,8 +183,8 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
                       onClick={() => setSelectedFile(file)}
                       className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
                         selectedFile?.path === file.path
-                          ? 'bg-indigo-600/20 text-white border border-indigo-500/30'
-                          : 'text-slate-300 hover:bg-white/[0.04]'
+                          ? 'bg-neutral-950 text-white border border-neutral-800 shadow-[0_0_8px_rgba(0,0,0,0.8)]'
+                          : 'text-neutral-300 hover:bg-neutral-950/60'
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -181,7 +196,7 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
                           e.stopPropagation();
                           handleToggleStage(file);
                         }}
-                        className="text-slate-500 hover:text-amber-400 p-0.5"
+                        className="text-neutral-500 hover:text-amber-400 p-0.5"
                         title="Unstage file"
                       >
                         <Minus className="w-3 h-3" />
@@ -194,12 +209,12 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
 
             {/* Unstaged Section */}
             <div>
-              <div className="flex items-center justify-between pb-1.5 border-b border-white/5 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center justify-between pb-1.5 border-b border-neutral-900 text-[11px] font-mono text-neutral-400">
                 <span className="font-semibold text-amber-400">Changes ({unstagedFiles.length})</span>
                 {unstagedFiles.length > 0 && (
                   <button
                     onClick={() => handleStageAll(true)}
-                    className="text-[10px] text-slate-500 hover:text-slate-300"
+                    className="text-[10px] text-neutral-500 hover:text-neutral-300"
                   >
                     Stage all
                   </button>
@@ -207,7 +222,7 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
               </div>
               <div className="mt-1 space-y-1">
                 {unstagedFiles.length === 0 ? (
-                  <div className="py-2 text-[11px] text-slate-600 italic px-2">Working tree clean</div>
+                  <div className="py-2 text-[11px] text-neutral-600 italic px-2 font-mono">Working tree clean</div>
                 ) : (
                   unstagedFiles.map((file) => (
                     <div
@@ -215,15 +230,15 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
                       onClick={() => setSelectedFile(file)}
                       className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
                         selectedFile?.path === file.path
-                          ? 'bg-indigo-600/20 text-white border border-indigo-500/30'
-                          : 'text-slate-300 hover:bg-white/[0.04]'
+                          ? 'bg-neutral-950 text-white border border-neutral-800 shadow-[0_0_8px_rgba(0,0,0,0.8)]'
+                          : 'text-neutral-300 hover:bg-neutral-950/60'
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
                         {file.status === 'added' ? (
                           <FilePlus className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         ) : file.status === 'deleted' ? (
-                          <FileX className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                          <FileX className="w-3.5 h-3.5 text-pink-400 shrink-0" />
                         ) : (
                           <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         )}
@@ -234,7 +249,7 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
                           e.stopPropagation();
                           handleToggleStage(file);
                         }}
-                        className="text-slate-500 hover:text-emerald-400 p-0.5"
+                        className="text-neutral-500 hover:text-emerald-400 p-0.5"
                         title="Stage file"
                       >
                         <Plus className="w-3 h-3" />
@@ -247,13 +262,13 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
           </div>
 
           {/* Commit Box Form */}
-          <div className="p-3 border-t border-white/[0.08] bg-[#12141f]/70 space-y-2">
+          <div className="p-3 border-t border-neutral-900 bg-neutral-950 space-y-2">
             <div className="flex flex-wrap gap-1">
               {conventionalPrefixes.map((p) => (
                 <button
                   key={p}
                   onClick={() => setCommitMessage((prev) => `${p} ${prev.replace(/^[a-z]+:\s*/, '')}`)}
-                  className="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-[10px] font-mono text-slate-400 hover:text-slate-200 border border-white/5"
+                  className="px-1.5 py-0.5 rounded bg-black hover:bg-neutral-900 text-[10px] font-mono text-neutral-400 hover:text-cyan-400 border border-neutral-800"
                 >
                   {p}
                 </button>
@@ -265,14 +280,14 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
               value={commitMessage}
               onChange={(e) => setCommitMessage(e.target.value)}
               placeholder="Commit message (e.g., feat(ports): add quick kill)..."
-              className="w-full bg-[#090a0f] border border-white/10 rounded-lg p-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 resize-none font-mono"
+              className="w-full bg-black border border-neutral-800 rounded-lg p-2 text-xs text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-cyan-400/50 resize-none font-mono"
             />
 
             <div className="grid grid-cols-2 gap-2">
               <button
                 disabled={isPushing || !commitMessage.trim()}
                 onClick={() => handleCommit(false)}
-                className="py-1.5 rounded-lg bg-surface-100 hover:bg-surface-50 border border-white/10 text-xs text-slate-200 font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                className="py-1.5 rounded-lg bg-black hover:bg-neutral-900 border border-neutral-800 text-xs text-neutral-200 font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
               >
                 <GitCommit className="w-3.5 h-3.5" />
                 Commit
@@ -280,7 +295,7 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
               <button
                 disabled={isPushing || !commitMessage.trim()}
                 onClick={() => handleCommit(true)}
-                className="py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-medium shadow-glow-sm disabled:opacity-50 transition-all flex items-center justify-center gap-1.5"
+                className="py-1.5 rounded-lg bg-neutral-950 text-cyan-400 border border-cyan-500/40 hover:bg-neutral-900 text-xs font-medium disabled:opacity-50 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(0,240,255,0.15)]"
               >
                 <Send className="w-3.5 h-3.5" />
                 Push
@@ -290,23 +305,23 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
         </div>
 
         {/* Right Panel: Visual Diff Viewer */}
-        <div className="flex-1 flex flex-col bg-[#090a0f] overflow-hidden">
+        <div className="flex-1 flex flex-col bg-black overflow-hidden">
           {selectedFile ? (
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-white/[0.07] bg-[#0e1017] flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-300 font-medium">{selectedFile.path}</span>
+              <div className="px-4 py-2.5 border-b border-neutral-900 bg-neutral-950 flex items-center justify-between text-xs font-mono">
+                <span className="text-neutral-200 font-medium">{selectedFile.path}</span>
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded uppercase ${
+                  className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${
                     selectedFile.staged
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      ? 'bg-black text-emerald-400 border border-emerald-500/30'
+                      : 'bg-black text-amber-400 border border-amber-500/30'
                   }`}
                 >
                   {selectedFile.staged ? 'Staged' : 'Unstaged'}
                 </span>
               </div>
 
-              <div className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed bg-[#0a0c12]">
+              <div className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed bg-black">
                 {selectedFile.diff ? (
                   <pre className="space-y-0.5">
                     {selectedFile.diff.split('\n').map((line, idx) => {
@@ -318,12 +333,12 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
                           key={idx}
                           className={`px-2 py-0.5 rounded font-mono ${
                             isAdd
-                              ? 'bg-emerald-950/40 text-emerald-300'
+                              ? 'bg-emerald-950/40 text-emerald-300 border-l-2 border-emerald-500'
                               : isSub
-                              ? 'bg-rose-950/40 text-rose-300'
+                              ? 'bg-pink-950/40 text-pink-300 border-l-2 border-pink-500'
                               : isHeader
-                              ? 'text-indigo-400 bg-indigo-950/20'
-                              : 'text-slate-400'
+                              ? 'text-cyan-400 bg-cyan-950/20'
+                              : 'text-neutral-400'
                           }`}
                         >
                           {line}
@@ -332,15 +347,15 @@ export const GitHudView: React.FC<GitHudViewProps> = ({ onShowToast, onRefreshSt
                     })}
                   </pre>
                 ) : (
-                  <div className="text-slate-600 text-xs italic">
+                  <div className="text-neutral-600 text-xs italic font-mono">
                     Binary or untracked file. Staging will include this entire file in repository.
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-xs space-y-2">
-              <History className="w-8 h-8 text-slate-600" />
+            <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 text-xs space-y-2">
+              <History className="w-8 h-8 text-neutral-600" />
               <span>Select a changed file to inspect visual diff</span>
             </div>
           )}

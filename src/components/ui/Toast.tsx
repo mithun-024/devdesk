@@ -36,30 +36,30 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
 
   const icons = {
     success: <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />,
-    error: <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />,
-    info: <Info className="w-4 h-4 text-indigo-400 shrink-0" />,
+    error: <AlertCircle className="w-4 h-4 text-pink-400 shrink-0" />,
+    info: <Info className="w-4 h-4 text-cyan-400 shrink-0" />,
   };
 
   const borders = {
-    success: 'border-emerald-500/30 bg-surface-200/95 shadow-glow-emerald',
-    error: 'border-rose-500/30 bg-surface-200/95',
-    info: 'border-indigo-500/30 bg-surface-200/95 shadow-glow-sm',
+    success: 'border-emerald-500/40 bg-black shadow-[0_0_15px_rgba(0,255,102,0.15)]',
+    error: 'border-pink-500/40 bg-black shadow-[0_0_15px_rgba(255,0,127,0.15)]',
+    info: 'border-cyan-500/40 bg-black shadow-[0_0_15px_rgba(0,240,255,0.15)]',
   };
 
   return (
     <div
-      className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border backdrop-blur-xl animate-slide-down ${borders[toast.type]}`}
+      className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-lg border animate-slide-down ${borders[toast.type]}`}
     >
       <div className="mt-0.5">{icons[toast.type]}</div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-xs font-semibold text-slate-200">{toast.title}</h4>
+        <h4 className="text-xs font-semibold text-neutral-100">{toast.title}</h4>
         {toast.description && (
-          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed truncate">{toast.description}</p>
+          <p className="text-[11px] text-neutral-400 mt-0.5 leading-relaxed truncate">{toast.description}</p>
         )}
       </div>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="text-slate-500 hover:text-slate-300 transition-colors p-0.5"
+        className="p-1 rounded text-neutral-500 hover:text-white hover:bg-neutral-900 transition-colors"
       >
         <X className="w-3.5 h-3.5" />
       </button>

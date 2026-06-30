@@ -30,10 +30,10 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
         fontSize: 12,
         fontFamily: 'JetBrains Mono, Menlo, monospace',
         theme: {
-          background: '#0d0f17',
-          foreground: '#e2e8f0',
-          cursor: '#6366f1',
-          selectionBackground: 'rgba(99, 102, 241, 0.3)',
+          background: '#000000',
+          foreground: '#f8fafc',
+          cursor: '#00ff66',
+          selectionBackground: 'rgba(0, 255, 102, 0.25)',
         },
       });
 
@@ -58,8 +58,8 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
           window.electronBridge?.writePty(ptyId, data);
         });
       } else {
-        term.writeln('\x1b[38;2;99;102;241m[DevDesk Quick Terminal Drawer - Ctrl+` to toggle]\x1b[0m');
-        term.write('\x1b[38;2;16;185;129mdevdesk\x1b[0m$ ');
+        term.writeln('\x1b[38;2;0;255;102m[DevDesk Quick Terminal Drawer - Ctrl+` to toggle]\x1b[0m');
+        term.write('\x1b[38;2;0;255;102mdevdesk\x1b[0m:\x1b[38;2;0;240;255m~\x1b[0m$ ');
 
         let currentLine = '';
         term.onData((data) => {
@@ -72,7 +72,7 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
               term.writeln(`\x1b[90mExecuted: ${currentLine}\x1b[0m`);
             }
             currentLine = '';
-            term.write('\x1b[38;2;16;185;129mdevdesk\x1b[0m$ ');
+            term.write('\x1b[38;2;0;255;102mdevdesk\x1b[0m:\x1b[38;2;0;240;255m~\x1b[0m$ ');
           } else if (code === 127) {
             if (currentLine.length > 0) {
               currentLine = currentLine.slice(0, -1);
@@ -92,31 +92,31 @@ export const TerminalDrawer: React.FC<TerminalDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="h-64 border-t border-white/[0.1] bg-[#0d0f17] flex flex-col z-30 shrink-0 shadow-2xl animate-slide-down select-none">
-      <div className="h-8 px-3 border-b border-white/[0.07] bg-[#121520] flex items-center justify-between text-xs font-mono">
-        <div className="flex items-center gap-2 text-slate-300">
-          <TerminalIcon className="w-3.5 h-3.5 text-indigo-400" />
+    <div className="h-64 border-t border-neutral-800 bg-black flex flex-col z-30 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.9)] animate-slide-down select-none">
+      <div className="h-8 px-3 border-b border-neutral-900 bg-neutral-950 flex items-center justify-between text-xs font-mono">
+        <div className="flex items-center gap-2 text-neutral-300">
+          <TerminalIcon className="w-3.5 h-3.5 text-green-400" />
           <span>Quick Terminal (Drawer)</span>
-          <span className="text-[10px] text-slate-500 font-sans">Press Ctrl + ` to toggle</span>
+          <span className="text-[10px] text-neutral-500 font-sans">Press Ctrl + ` to toggle</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={onOpenFullscreen}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
             title="Open Fullscreen Terminal"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-1 rounded text-neutral-400 hover:text-pink-400 hover:bg-pink-950/30 transition-colors"
             title="Close Drawer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
-      <div className="flex-1 p-2 bg-[#090a0f] overflow-hidden">
+      <div className="flex-1 p-2 bg-black overflow-hidden">
         <div ref={terminalRef} className="h-full w-full" />
       </div>
     </div>

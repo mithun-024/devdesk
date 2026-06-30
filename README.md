@@ -8,9 +8,11 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=for-the-badge&logo=typescript)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwind-css)
 ![Vite](https://img.shields.io/badge/Vite-6.0-646cff?style=for-the-badge&logo=vite)
+![Theme](https://img.shields.io/badge/Theme-OLED%20Pure%20Black-000000?style=for-the-badge)
+![Accents](https://img.shields.io/badge/Accents-Retro%20Neon-00ff66?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-emerald?style=for-the-badge)
 
-**DevDesk** is a native desktop workstation HUD designed to unify a developer's daily workflow into one seamless command center. It replaces scattered terminal tabs, background processes, and fragmented dev tools with a unified, keyboard-first desktop experience.
+**DevDesk** is a minimalist, barebones native desktop workstation HUD designed to unify a developer's daily workflow into one seamless command center. Featuring a distraction-free **pure OLED black (`#000000`)** interface with **retro neon icon accents** (cyan, matrix green, amber, magenta, purple, sky), it eliminates clutter while giving developers instant keyboard-first control over their environment.
 
 Built with **React 19**, **TypeScript**, and **Tailwind CSS**, and powered by **Electron** with a native **Node.js PTY bridge**, DevDesk interacts directly with your Linux operating system.
 
