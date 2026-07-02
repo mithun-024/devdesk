@@ -10,18 +10,23 @@ let db = null;
 let sqlite = null;
 
 function getDbPath(app) {
+  const os = require('os');
+  const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+  const devdeskDir = path.join(configHome, 'devdesk');
   try {
-    if (app && typeof app.getPath === 'function') {
-      const userData = app.getPath('userData');
-      if (!fs.existsSync(userData)) {
-        fs.mkdirSync(userData, { recursive: true });
-      }
-      return path.join(userData, 'devdesk.db');
+    if (!fs.existsSync(devdeskDir)) {
+      fs.mkdirSync(devdeskDir, { recursive: true });
     }
+    return path.join(devdeskDir, 'devdesk.db');
   } catch (e) {
-    // fallback if app not ready
+    if (app && typeof app.getPath === 'function') {
+      try {
+        const userData = app.getPath('userData');
+        return path.join(userData, 'devdesk.db');
+      } catch (err) {}
+    }
+    return path.join(process.cwd(), 'devdesk.db');
   }
-  return path.join(process.cwd(), 'devdesk.db');
 }
 
 function initDb(app) {
@@ -39,9 +44,13 @@ function initDb(app) {
       name TEXT NOT NULL,
       path TEXT NOT NULL,
       active_branch TEXT DEFAULT 'main',
+      dev_command TEXT DEFAULT '',
+      package_manager TEXT DEFAULT 'npm',
+      git_remote TEXT DEFAULT '',
       env_vars TEXT DEFAULT '{}',
       pinned_ports TEXT DEFAULT '[]',
       scratch_notes TEXT DEFAULT '',
+      last_snapshot_at TEXT DEFAULT '',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       is_default INTEGER DEFAULT 0
@@ -81,6 +90,12 @@ function initDb(app) {
       updated_at TEXT NOT NULL
     );
   `);
+
+  // Ensure columns exist if table was created in an earlier version
+  try { sqlite.exec(`ALTER TABLE workspaces ADD COLUMN dev_command TEXT DEFAULT '';`); } catch (e) {}
+  try { sqlite.exec(`ALTER TABLE workspaces ADD COLUMN package_manager TEXT DEFAULT 'npm';`); } catch (e) {}
+  try { sqlite.exec(`ALTER TABLE workspaces ADD COLUMN git_remote TEXT DEFAULT '';`); } catch (e) {}
+  try { sqlite.exec(`ALTER TABLE workspaces ADD COLUMN last_snapshot_at TEXT DEFAULT '';`); } catch (e) {}
 
   db = drizzle(sqlite);
 
@@ -132,11 +147,15 @@ function initDb(app) {
   return db;
 }
 
-// --- Workspaces CRUD ---
+// --- Workspaces / Projects CRUD ---
 function getAllWorkspaces() {
   const rows = db.select().from(workspaces).all();
   return rows.map((w) => ({
     ...w,
+    devCommand: w.devCommand || '',
+    packageManager: w.packageManager || 'npm',
+    gitRemote: w.gitRemote || '',
+    lastSnapshotAt: w.lastSnapshotAt || '',
     envVars: JSON.parse(w.envVars || '{}'),
     pinnedPorts: JSON.parse(w.pinnedPorts || '[]'),
     isDefault: Boolean(w.isDefault),
@@ -145,16 +164,20 @@ function getAllWorkspaces() {
 
 function createWorkspace(data) {
   const now = new Date().toISOString();
-  const id = data.id || `ws-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+  const id = data.id || `proj-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
   
   db.insert(workspaces).values({
     id,
     name: data.name,
     path: data.path,
     activeBranch: data.activeBranch || 'main',
+    devCommand: data.devCommand || '',
+    packageManager: data.packageManager || 'npm',
+    gitRemote: data.gitRemote || '',
     envVars: JSON.stringify(data.envVars || {}),
     pinnedPorts: JSON.stringify(data.pinnedPorts || []),
     scratchNotes: data.scratchNotes || '',
+    lastSnapshotAt: data.lastSnapshotAt || '',
     createdAt: now,
     updatedAt: now,
     isDefault: data.isDefault ? 1 : 0,
@@ -165,9 +188,13 @@ function createWorkspace(data) {
     name: data.name,
     path: data.path,
     activeBranch: data.activeBranch || 'main',
+    devCommand: data.devCommand || '',
+    packageManager: data.packageManager || 'npm',
+    gitRemote: data.gitRemote || '',
     envVars: data.envVars || {},
     pinnedPorts: data.pinnedPorts || [],
     scratchNotes: data.scratchNotes || '',
+    lastSnapshotAt: data.lastSnapshotAt || '',
     createdAt: now,
     updatedAt: now,
     isDefault: Boolean(data.isDefault),
@@ -184,9 +211,13 @@ function updateWorkspace(id, data) {
   if (data.name !== undefined) valuesToUpdate.name = data.name;
   if (data.path !== undefined) valuesToUpdate.path = data.path;
   if (data.activeBranch !== undefined) valuesToUpdate.activeBranch = data.activeBranch;
+  if (data.devCommand !== undefined) valuesToUpdate.devCommand = data.devCommand;
+  if (data.packageManager !== undefined) valuesToUpdate.packageManager = data.packageManager;
+  if (data.gitRemote !== undefined) valuesToUpdate.gitRemote = data.gitRemote;
   if (data.envVars !== undefined) valuesToUpdate.envVars = JSON.stringify(data.envVars);
   if (data.pinnedPorts !== undefined) valuesToUpdate.pinnedPorts = JSON.stringify(data.pinnedPorts);
   if (data.scratchNotes !== undefined) valuesToUpdate.scratchNotes = data.scratchNotes;
+  if (data.lastSnapshotAt !== undefined) valuesToUpdate.lastSnapshotAt = data.lastSnapshotAt;
   if (data.isDefault !== undefined) valuesToUpdate.isDefault = data.isDefault ? 1 : 0;
 
   db.update(workspaces).set(valuesToUpdate).where(eq(workspaces.id, id)).run();
@@ -194,6 +225,10 @@ function updateWorkspace(id, data) {
   const updated = db.select().from(workspaces).where(eq(workspaces.id, id)).get();
   return {
     ...updated,
+    devCommand: updated.devCommand || '',
+    packageManager: updated.packageManager || 'npm',
+    gitRemote: updated.gitRemote || '',
+    lastSnapshotAt: updated.lastSnapshotAt || '',
     envVars: JSON.parse(updated.envVars || '{}'),
     pinnedPorts: JSON.parse(updated.pinnedPorts || '[]'),
     isDefault: Boolean(updated.isDefault),
@@ -521,9 +556,11 @@ function importDatabase(backupData) {
 module.exports = {
   initDb,
   getAllWorkspaces,
-  createWorkspace,
-  updateWorkspace,
-  deleteWorkspace,
+  getAllProjects: getAllWorkspaces,
+  createProject: createWorkspace,
+  updateProject: updateWorkspace,
+  deleteProject: deleteWorkspace,
+  getDbPath,
   getTasks,
   createTask,
   updateTask,

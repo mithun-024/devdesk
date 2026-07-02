@@ -4,6 +4,9 @@ const { exec, execFile } = require('child_process');
 const fs = require('fs');
 const pty = require('node-pty');
 const dbManager = require('./db/index.cjs');
+const ProjectService = require('./services/ProjectService.cjs');
+const PortService = require('./services/PortService.cjs');
+const GitService = require('./services/GitService.cjs');
 
 let mainWindow = null;
 const ptyProcesses = new Map();
@@ -139,7 +142,7 @@ ipcMain.handle('select_directory', async () => {
   };
 });
 
-// --- Database Workspaces CRUD Handlers ---
+// --- Database Workspaces & Projects CRUD Handlers ---
 ipcMain.handle('get_workspaces', async () => {
   return dbManager.getAllWorkspaces();
 });
@@ -154,6 +157,37 @@ ipcMain.handle('update_workspace', async (_event, { id, data }) => {
 
 ipcMain.handle('delete_workspace', async (_event, { id }) => {
   return dbManager.deleteWorkspace(id);
+});
+
+// Phase 1: ProjectService Handlers
+ipcMain.handle('project_register', async (_event, { path: folderPath, name }) => {
+  return ProjectService.registerProject(folderPath, name);
+});
+
+ipcMain.handle('project_list', async () => {
+  return ProjectService.getAllProjects();
+});
+
+ipcMain.handle('project_remove', async (_event, { id }) => {
+  return ProjectService.deleteProject(id);
+});
+
+ipcMain.handle('project_inspect', async (_event, { path: folderPath }) => {
+  return ProjectService.inspectDirectory(folderPath);
+});
+
+// Phase 1: PortService Handlers
+ipcMain.handle('get_mapped_ports', async () => {
+  return PortService.getLivePortsMapped();
+});
+
+ipcMain.handle('kill_process_pid', async (_event, { pid }) => {
+  return PortService.killProcess(pid);
+});
+
+// Phase 1: GitService Handlers
+ipcMain.handle('git_project_summary', async (_event, { path: projectPath }) => {
+  return GitService.getProjectGitSummary(projectPath);
 });
 
 // --- Database Tasks & History CRUD Handlers ---

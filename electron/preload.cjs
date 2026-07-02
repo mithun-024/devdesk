@@ -12,6 +12,12 @@ contextBridge.exposeInMainWorld('electronBridge', {
   updateWorkspace: (id, data) => ipcRenderer.invoke('update_workspace', { id, data }),
   deleteWorkspace: (id) => ipcRenderer.invoke('delete_workspace', { id }),
 
+  // Phase 1: Project Management Bridge
+  registerProject: (path, name) => ipcRenderer.invoke('project_register', { path, name }),
+  getProjects: () => ipcRenderer.invoke('project_list'),
+  removeProject: (id) => ipcRenderer.invoke('project_remove', { id }),
+  inspectProject: (path) => ipcRenderer.invoke('project_inspect', { path }),
+
   // SQLite + Drizzle Tasks & History CRUD
   getTasks: (workspaceId) => ipcRenderer.invoke('get_tasks', { workspaceId }),
   createTask: (data) => ipcRenderer.invoke('create_task', data),
@@ -36,10 +42,13 @@ contextBridge.exposeInMainWorld('electronBridge', {
 
   // Port and Process Management
   getActivePorts: () => ipcRenderer.invoke('get_active_ports'),
+  getMappedPorts: () => ipcRenderer.invoke('get_mapped_ports'),
   killProcess: (pid) => ipcRenderer.invoke('kill_process', { pid }),
+  killProcessPid: (pid) => ipcRenderer.invoke('kill_process_pid', { pid }),
 
-  // Real Workspace-Aware Git Telemetry
+  // Real Workspace & Project-Aware Git Telemetry
   getGitStatus: (cwd) => ipcRenderer.invoke('get_git_status', { cwd }),
+  getProjectGitSummary: (path) => ipcRenderer.invoke('git_project_summary', { path }),
   gitCheckoutBranch: (cwd, branch) => ipcRenderer.invoke('git_checkout_branch', { cwd, branch }),
   gitCreateBranch: (cwd, branch) => ipcRenderer.invoke('git_create_branch', { cwd, branch }),
   gitDiff: (cwd, file, staged) => ipcRenderer.invoke('git_diff', { cwd, file, staged }),

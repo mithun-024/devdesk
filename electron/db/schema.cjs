@@ -5,13 +5,19 @@ const workspaces = sqliteTable('workspaces', {
   name: text('name').notNull(),
   path: text('path').notNull(),
   activeBranch: text('active_branch').default('main'),
+  devCommand: text('dev_command').default(''),
+  packageManager: text('package_manager').default('npm'),
+  gitRemote: text('git_remote').default(''),
   envVars: text('env_vars').default('{}'), // JSON string: Record<string, string>
   pinnedPorts: text('pinned_ports').default('[]'), // JSON string: number[]
   scratchNotes: text('scratch_notes').default(''),
+  lastSnapshotAt: text('last_snapshot_at').default(''),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   isDefault: integer('is_default').default(0),
 });
+
+const projects = workspaces;
 
 const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
@@ -49,6 +55,7 @@ const credentials = sqliteTable('credentials', {
 
 module.exports = {
   workspaces,
+  projects,
   tasks,
   taskHistory,
   settings,
