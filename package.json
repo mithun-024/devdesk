@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Minimalist, high-performance developer workstation HUD with integrated terminal, task manager, and Git dashboard",
   "main": "electron/main.cjs",
+  "bin": {
+    "devdesk": "./bin/devdesk.js"
+  },
   "scripts": {
     "dev": "concurrently -k \"vite --port 1420\" \"wait-on tcp:1420 && electron .\"",
     "start": "electron .",
@@ -37,7 +40,8 @@
     "lucide-react": "^0.460.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
