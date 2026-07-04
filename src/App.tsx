@@ -13,6 +13,7 @@ import { TerminalDrawer } from './components/layout/TerminalDrawer';
 import { CommandPalette } from './components/palette/CommandPalette';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
 
+import { ProjectListView } from './components/views/ProjectListView';
 import { TaskTrackerView } from './components/views/TaskTrackerView';
 import { GitHudView } from './components/views/GitHudView';
 import { TerminalView } from './components/views/TerminalView';
@@ -23,7 +24,7 @@ import { ScratchpadView } from './components/views/ScratchpadView';
 import { SettingsView } from './components/views/SettingsView';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('tasks');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('projects');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isTerminalDrawerOpen, setIsTerminalDrawerOpen] = useState(false);
@@ -150,11 +151,19 @@ export const App: React.FC = () => {
   // Command Palette Registry
   const paletteCommands: CommandItem[] = [
     {
+      id: 'nav-projects',
+      title: 'Go to Projects Dashboard',
+      subtitle: 'View live ports, processes, and Git telemetry for all projects',
+      category: 'Navigation',
+      shortcut: 'Alt+1',
+      icon: '📁',
+      action: () => setActiveTab('projects'),
+    },
+    {
       id: 'nav-workspaces',
       title: 'Go to Workspace Engine',
       subtitle: 'Manage local directory worktrees and environment variables',
       category: 'Navigation',
-      shortcut: 'Alt+1',
       icon: '🗂️',
       action: () => setActiveTab('workspaces'),
     },
@@ -276,6 +285,20 @@ export const App: React.FC = () => {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden bg-[#16161e]">
+          {activeTab === 'projects' && (
+            <ProjectListView
+              onOpenTerminal={(proj) => {
+                handleSelectWorkspace(proj.id);
+                setActiveTab('terminal');
+              }}
+              onNavigateGit={(proj) => {
+                handleSelectWorkspace(proj.id);
+                setActiveTab('git');
+              }}
+              onShowToast={showToast}
+            />
+          )}
+
           {activeTab === 'workspaces' && (
             <WorkspaceManagerView
               workspaces={workspaces}

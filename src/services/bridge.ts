@@ -1,7 +1,10 @@
 import {
   ActivePort,
+  MappedPort,
   GitRepoState,
   WorkspaceSession,
+  Project,
+  ProjectGitSummary,
   Task,
   TaskHistoryItem,
   SelectedDirectory,
@@ -24,16 +27,84 @@ export const selectWorkspaceDirectory = async (): Promise<SelectedDirectory | nu
   return null;
 };
 
-// --- SQLite + Drizzle Workspaces ---
-export const fetchWorkspaces = async (): Promise<WorkspaceSession[]> => {
-  if (window.electronBridge) {
+// --- Phase 1: Project Registration & Management ---
+export const registerProject = async (path: string, name?: string): Promise<Project | null> => {
+  if (window.electronBridge?.registerProject) {
     try {
-      return await window.electronBridge.getWorkspaces();
+      return await window.electronBridge.registerProject(path, name);
     } catch (e) {
-      console.error('Failed to fetch workspaces from SQLite:', e);
+      console.error('Failed to register project:', e);
+    }
+  }
+  return null;
+};
+
+export const fetchProjects = async (): Promise<Project[]> => {
+  if (window.electronBridge?.getProjects) {
+    try {
+      return await window.electronBridge.getProjects();
+    } catch (e) {
+      console.error('Failed to fetch projects:', e);
+    }
+  } else if (window.electronBridge?.getWorkspaces) {
+    return await window.electronBridge.getWorkspaces();
+  }
+  return [];
+};
+
+export const removeProject = async (id: string): Promise<boolean> => {
+  if (window.electronBridge?.removeProject) {
+    try {
+      return await window.electronBridge.removeProject(id);
+    } catch (e) {
+      console.error('Failed to remove project:', e);
+    }
+  } else if (window.electronBridge?.deleteWorkspace) {
+    return await window.electronBridge.deleteWorkspace(id);
+  }
+  return false;
+};
+
+// --- Phase 1: Mapped Ports & Live Process Kill ---
+export const fetchMappedPorts = async (): Promise<MappedPort[]> => {
+  if (window.electronBridge?.getMappedPorts) {
+    try {
+      return await window.electronBridge.getMappedPorts();
+    } catch (e) {
+      console.error('Failed to fetch mapped ports:', e);
     }
   }
   return [];
+};
+
+export const killProcess = async (pid: number): Promise<{ success: boolean; message: string }> => {
+  if (window.electronBridge?.killProcessPid) {
+    try {
+      return await window.electronBridge.killProcessPid(pid);
+    } catch (e: any) {
+      return { success: false, message: e.message || String(e) };
+    }
+  } else if (window.electronBridge?.killProcess) {
+    return await window.electronBridge.killProcess(pid);
+  }
+  return { success: false, message: 'Desktop engine not connected' };
+};
+
+// --- Phase 1: Project Git Summary ---
+export const fetchProjectGitSummary = async (path: string): Promise<ProjectGitSummary | null> => {
+  if (window.electronBridge?.getProjectGitSummary) {
+    try {
+      return await window.electronBridge.getProjectGitSummary(path);
+    } catch (e) {
+      console.error(`Failed to fetch git summary for ${path}:`, e);
+    }
+  }
+  return null;
+};
+
+// --- SQLite + Drizzle Workspaces (backward compatible) ---
+export const fetchWorkspaces = async (): Promise<WorkspaceSession[]> => {
+  return fetchProjects();
 };
 
 export const createWorkspace = async (

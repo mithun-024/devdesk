@@ -36,12 +36,55 @@ export interface WorkspaceSession {
   name: string;
   path: string;
   activeBranch: string;
+  devCommand?: string;
+  packageManager?: string;
+  gitRemote?: string;
   envVars: Record<string, string>;
   pinnedPorts: number[];
   scratchNotes: string;
+  lastSnapshotAt?: string;
   createdAt: string;
   updatedAt: string;
   isDefault?: boolean;
+  pathExists?: boolean;
+}
+
+export type Project = WorkspaceSession;
+
+export interface MappedPort {
+  port: number;
+  pid: number;
+  processName: string;
+  protocol: 'tcp' | 'udp';
+  status: 'LISTEN' | 'ESTABLISHED';
+  memoryMb: number;
+  uptime: string;
+  projectId?: string | null;
+  projectName?: string | null;
+  projectPath?: string | null;
+  isProjectMapped: boolean;
+}
+
+export interface RecentCommit {
+  hash: string;
+  message: string;
+  author: string;
+  relativeDate: string;
+  date: string;
+}
+
+export interface ProjectGitSummary {
+  isRepo: boolean;
+  currentBranch: string;
+  isClean: boolean;
+  dirtyCount: number;
+  stagedCount: number;
+  unstagedCount: number;
+  untrackedCount: number;
+  changedFiles: Array<{ file: string; status: string; staged: boolean }>;
+  ahead: number;
+  behind: number;
+  recentCommits: RecentCommit[];
 }
 
 export interface ActivePort {
@@ -87,7 +130,7 @@ export interface CredentialSummary {
   updatedAt: string;
 }
 
-export type ActiveTab = 'workspaces' | 'tasks' | 'git' | 'ports' | 'terminal' | 'devtools' | 'scratchpad' | 'settings';
+export type ActiveTab = 'projects' | 'workspaces' | 'tasks' | 'git' | 'ports' | 'terminal' | 'devtools' | 'scratchpad' | 'settings';
 
 export interface CommandItem {
   id: string;
@@ -104,6 +147,19 @@ export interface ElectronBridge {
 
   // Native Directory
   selectDirectory: () => Promise<SelectedDirectory | null>;
+
+  // Phase 1: Project Management Bridge
+  registerProject: (path: string, name?: string) => Promise<Project>;
+  getProjects: () => Promise<Project[]>;
+  removeProject: (id: string) => Promise<boolean>;
+  inspectProject: (path: string) => Promise<any>;
+
+  // Phase 1: Mapped Ports & Process Bridge
+  getMappedPorts: () => Promise<MappedPort[]>;
+  killProcessPid: (pid: number) => Promise<{ success: boolean; message: string }>;
+
+  // Phase 1: Git Project Summary Bridge
+  getProjectGitSummary: (path: string) => Promise<ProjectGitSummary>;
 
   // SQLite + Drizzle Workspaces
   getWorkspaces: () => Promise<WorkspaceSession[]>;

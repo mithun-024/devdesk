@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  FolderGit2,
   Layers,
   CheckSquare,
   GitBranch,
@@ -42,9 +43,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     badgeColor?: string;
   }> = [
     {
-      id: 'workspaces',
-      label: 'Workspaces',
-      icon: <Layers className="w-4 h-4" />,
+      id: 'projects',
+      label: 'Projects',
+      icon: <FolderGit2 className="w-4 h-4" />,
       iconColor: 'text-[#7dcfff]',
       indicatorColor: 'bg-[#7dcfff] shadow-[0_0_8px_rgba(125,207,255,0.7)]',
     },
