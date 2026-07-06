@@ -18,6 +18,21 @@ contextBridge.exposeInMainWorld('electronBridge', {
   removeProject: (id) => ipcRenderer.invoke('project_remove', { id }),
   inspectProject: (path) => ipcRenderer.invoke('project_inspect', { path }),
 
+  // Phase 2: Where We Left Off Notes Bridge
+  getProjectNotes: (projectId) => ipcRenderer.invoke('notes_get', { projectId }),
+  saveProjectNotes: (projectId, notes) => ipcRenderer.invoke('notes_save', { projectId, notes }),
+
+  // Phase 2: Snapshots Bridge
+  createSnapshot: (projectId) => ipcRenderer.invoke('snapshot_create', { projectId }),
+  getLatestSnapshot: (projectId) => ipcRenderer.invoke('snapshot_get_latest', { projectId }),
+  getSnapshotHistory: (projectId, limit) => ipcRenderer.invoke('snapshot_get_history', { projectId, limit }),
+
+  // Phase 2: Managed Dev Server Bridge
+  startDevServer: (projectId) => ipcRenderer.invoke('dev_server_start', { projectId }),
+  stopDevServer: (projectId) => ipcRenderer.invoke('dev_server_stop', { projectId }),
+  getDevServerStatus: (projectId) => ipcRenderer.invoke('dev_server_get_status', { projectId }),
+  getAllRunningDevServers: () => ipcRenderer.invoke('dev_server_get_all'),
+
   // SQLite + Drizzle Tasks & History CRUD
   getTasks: (workspaceId) => ipcRenderer.invoke('get_tasks', { workspaceId }),
   createTask: (data) => ipcRenderer.invoke('create_task', data),

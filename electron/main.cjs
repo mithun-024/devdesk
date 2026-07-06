@@ -7,6 +7,8 @@ const dbManager = require('./db/index.cjs');
 const ProjectService = require('./services/ProjectService.cjs');
 const PortService = require('./services/PortService.cjs');
 const GitService = require('./services/GitService.cjs');
+const NotesService = require('./services/NotesService.cjs');
+const DevServerService = require('./services/DevServerService.cjs');
 
 let mainWindow = null;
 const ptyProcesses = new Map();
@@ -53,6 +55,13 @@ function createWindow() {
     mainWindow.loadFile(prodPath);
   }
 
+  // Phase 2: Auto-snapshot when user closes the app
+  mainWindow.on('close', async () => {
+    try {
+      await NotesService.autoSnapshotAll();
+    } catch (e) {}
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
     for (const [id, proc] of ptyProcesses.entries()) {
@@ -61,6 +70,7 @@ function createWindow() {
       } catch (e) {}
     }
     ptyProcesses.clear();
+    DevServerService.stopAll();
   });
 }
 
@@ -188,6 +198,44 @@ ipcMain.handle('kill_process_pid', async (_event, { pid }) => {
 // Phase 1: GitService Handlers
 ipcMain.handle('git_project_summary', async (_event, { path: projectPath }) => {
   return GitService.getProjectGitSummary(projectPath);
+});
+
+// Phase 2: Notes & Snapshot Handlers
+ipcMain.handle('notes_get', async (_event, { projectId }) => {
+  return NotesService.getProjectNotes(projectId);
+});
+
+ipcMain.handle('notes_save', async (_event, { projectId, notes }) => {
+  return NotesService.saveProjectNotes(projectId, notes);
+});
+
+ipcMain.handle('snapshot_create', async (_event, { projectId }) => {
+  return NotesService.createSnapshot(projectId);
+});
+
+ipcMain.handle('snapshot_get_latest', async (_event, { projectId }) => {
+  return NotesService.getLatestSnapshot(projectId);
+});
+
+ipcMain.handle('snapshot_get_history', async (_event, { projectId, limit }) => {
+  return NotesService.getSnapshots(projectId, limit);
+});
+
+// Phase 2: Dev Server Handlers
+ipcMain.handle('dev_server_start', async (_event, { projectId }) => {
+  return DevServerService.startDevServer(projectId);
+});
+
+ipcMain.handle('dev_server_stop', async (_event, { projectId }) => {
+  return DevServerService.stopDevServer(projectId);
+});
+
+ipcMain.handle('dev_server_get_status', async (_event, { projectId }) => {
+  return DevServerService.getDevServerStatus(projectId);
+});
+
+ipcMain.handle('dev_server_get_all', async () => {
+  return DevServerService.getAllRunningDevServers();
 });
 
 // --- Database Tasks & History CRUD Handlers ---

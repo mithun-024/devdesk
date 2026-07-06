@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const Database = require('better-sqlite3');
 const { drizzle } = require('drizzle-orm/better-sqlite3');
 const { eq, desc } = require('drizzle-orm');
-const { workspaces, tasks, taskHistory, settings, credentials } = require('./schema.cjs');
+const { workspaces, tasks, taskHistory, settings, credentials, projectNotes, snapshots } = require('./schema.cjs');
 
 let db = null;
 let sqlite = null;
@@ -88,6 +88,26 @@ function initDb(app) {
       key TEXT PRIMARY KEY,
       encrypted_value TEXT NOT NULL,
       updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS project_notes (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      last_task TEXT DEFAULT '',
+      next_step TEXT DEFAULT '',
+      blockers TEXT DEFAULT '',
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS snapshots (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      commit_hash TEXT DEFAULT '',
+      commit_message TEXT DEFAULT '',
+      branch TEXT DEFAULT 'main',
+      uncommitted_count INTEGER DEFAULT 0,
+      active_ports_json TEXT DEFAULT '[]',
+      created_at TEXT NOT NULL
     );
   `);
 
@@ -553,6 +573,116 @@ function importDatabase(backupData) {
   return true;
 }
 
+// --- Phase 2: Project Notes ("Where we left off") ---
+function getProjectNotes(projectId) {
+  const row = db.select().from(projectNotes).where(eq(projectNotes.projectId, projectId)).get();
+  if (row) {
+    return row;
+  }
+  return {
+    id: `pn-${projectId}`,
+    projectId,
+    lastTask: '',
+    nextStep: '',
+    blockers: '',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function saveProjectNotes(projectId, data) {
+  const now = new Date().toISOString();
+  const existing = db.select().from(projectNotes).where(eq(projectNotes.projectId, projectId)).get();
+
+  if (existing) {
+    db.update(projectNotes)
+      .set({
+        lastTask: data.lastTask !== undefined ? data.lastTask : existing.lastTask,
+        nextStep: data.nextStep !== undefined ? data.nextStep : existing.nextStep,
+        blockers: data.blockers !== undefined ? data.blockers : existing.blockers,
+        updatedAt: now,
+      })
+      .where(eq(projectNotes.projectId, projectId))
+      .run();
+  } else {
+    db.insert(projectNotes)
+      .values({
+        id: `pn-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+        projectId,
+        lastTask: data.lastTask || '',
+        nextStep: data.nextStep || '',
+        blockers: data.blockers || '',
+        updatedAt: now,
+      })
+      .run();
+  }
+
+  return getProjectNotes(projectId);
+}
+
+// --- Phase 2: Snapshots ---
+function insertSnapshot(data) {
+  const now = new Date().toISOString();
+  const id = data.id || `snap-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+
+  db.insert(snapshots)
+    .values({
+      id,
+      projectId: data.projectId,
+      commitHash: data.commitHash || '',
+      commitMessage: data.commitMessage || '',
+      branch: data.branch || 'main',
+      uncommittedCount: data.uncommittedCount || 0,
+      activePortsJson: typeof data.activePorts === 'string' ? data.activePorts : JSON.stringify(data.activePorts || []),
+      createdAt: data.createdAt || now,
+    })
+    .run();
+
+  // Also update lastSnapshotAt on workspace
+  try {
+    db.update(workspaces)
+      .set({ lastSnapshotAt: now })
+      .where(eq(workspaces.id, data.projectId))
+      .run();
+  } catch (e) {}
+
+  return {
+    id,
+    ...data,
+    createdAt: data.createdAt || now,
+  };
+}
+
+function getLatestSnapshot(projectId) {
+  const row = db
+    .select()
+    .from(snapshots)
+    .where(eq(snapshots.projectId, projectId))
+    .orderBy(desc(snapshots.createdAt))
+    .limit(1)
+    .get();
+
+  if (!row) return null;
+  return {
+    ...row,
+    activePorts: JSON.parse(row.activePortsJson || '[]'),
+  };
+}
+
+function getProjectSnapshots(projectId, limit = 10) {
+  const rows = db
+    .select()
+    .from(snapshots)
+    .where(eq(snapshots.projectId, projectId))
+    .orderBy(desc(snapshots.createdAt))
+    .limit(limit)
+    .all();
+
+  return rows.map((r) => ({
+    ...r,
+    activePorts: JSON.parse(r.activePortsJson || '[]'),
+  }));
+}
+
 module.exports = {
   initDb,
   getAllWorkspaces,
@@ -574,4 +704,9 @@ module.exports = {
   listCredentialKeys,
   exportDatabase,
   importDatabase,
+  getProjectNotes,
+  saveProjectNotes,
+  insertSnapshot,
+  getLatestSnapshot,
+  getProjectSnapshots,
 };

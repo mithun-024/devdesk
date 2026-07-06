@@ -53,6 +53,27 @@ const credentials = sqliteTable('credentials', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// Phase 2: Where We Left Off Notes & Snapshots
+const projectNotes = sqliteTable('project_notes', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  lastTask: text('last_task').default(''),
+  nextStep: text('next_step').default(''),
+  blockers: text('blockers').default(''),
+  updatedAt: text('updated_at').notNull(),
+});
+
+const snapshots = sqliteTable('snapshots', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  commitHash: text('commit_hash').default(''),
+  commitMessage: text('commit_message').default(''),
+  branch: text('branch').default('main'),
+  uncommittedCount: integer('uncommitted_count').default(0),
+  activePortsJson: text('active_ports_json').default('[]'),
+  createdAt: text('created_at').notNull(),
+});
+
 module.exports = {
   workspaces,
   projects,
@@ -60,4 +81,6 @@ module.exports = {
   taskHistory,
   settings,
   credentials,
+  projectNotes,
+  snapshots,
 };
