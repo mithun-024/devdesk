@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url);
 
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 const dbManager = require('../electron/db/index.cjs');
 
 // Initialize database
@@ -13,6 +14,7 @@ dbManager.initDb();
 const ProjectService = require('../electron/services/ProjectService.cjs');
 const PortService = require('../electron/services/PortService.cjs');
 const GitService = require('../electron/services/GitService.cjs');
+const NotesService = require('../electron/services/NotesService.cjs');
 
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
@@ -50,7 +52,7 @@ async function handleAdd() {
     if (project.devCommand) {
       console.log(`  ${colors.bold}Dev Command:${colors.reset}     ${colors.magenta}${project.devCommand}${colors.reset}`);
     }
-    console.log(`\n${colors.dim}Launch DevDesk GUI or run 'devdesk list' to inspect active ports.${colors.reset}\n`);
+    console.log(`\n${colors.dim}Run 'devdesk resume' to see where you left off or 'devdesk run' to launch.${colors.reset}\n`);
   } catch (err) {
     console.error(`${colors.red}✖ Failed to register project: ${err.message}${colors.reset}`);
     process.exit(1);
@@ -121,19 +123,113 @@ async function handlePorts() {
   console.log('');
 }
 
+async function handleResume() {
+  const target = args[1] || '.';
+  const resolved = path.resolve(target);
+  const projects = ProjectService.getAllProjects();
+
+  let project = projects.find((p) => p.path === resolved);
+  if (!project && args[1]) {
+    project = projects.find((p) => p.name.toLowerCase() === args[1].toLowerCase() || p.id === args[1]);
+  }
+  if (!project) {
+    project = projects.find((p) => p.isDefault) || projects[0];
+  }
+
+  if (!project) {
+    console.error(`${colors.red}✖ No registered projects found. Run 'devdesk add .' to register one.${colors.reset}`);
+    process.exit(1);
+  }
+
+  // Auto-snapshot on resume
+  try {
+    await NotesService.createSnapshot(project.id);
+  } catch (e) {}
+
+  const notes = NotesService.getProjectNotes(project.id);
+  const git = await GitService.getProjectGitSummary(project.path);
+  const allPorts = await PortService.getLivePortsMapped();
+  const projectPorts = allPorts.filter((p) => p.projectId === project.id);
+
+  console.log(`\n${colors.bold}${colors.cyan}══════════════════════════════════════════════════════════════════${colors.reset}`);
+  console.log(`${colors.bold}${colors.cyan}  DEVDESK RESUME SUMMARY ⚡${colors.reset}`);
+  console.log(`${colors.bold}${colors.cyan}══════════════════════════════════════════════════════════════════${colors.reset}\n`);
+
+  console.log(`  ${colors.bold}Project:${colors.reset}       ${colors.green}${colors.bold}${project.name}${colors.reset} ${colors.dim}(${project.path})${colors.reset}`);
+  console.log(`  ${colors.bold}Branch:${colors.reset}        ${colors.yellow}${git.currentBranch || project.activeBranch}${colors.reset}`);
+
+  if (git.recentCommits && git.recentCommits.length > 0) {
+    const last = git.recentCommits[0];
+    console.log(`  ${colors.bold}Last Commit:${colors.reset}   ${colors.dim}${last.hash}${colors.reset} - ${last.message} ${colors.dim}(${last.relativeDate})${colors.reset}`);
+  }
+
+  const statusText = git.isClean
+    ? `${colors.green}Clean working tree${colors.reset}`
+    : `${colors.red}${git.dirtyCount} uncommitted files (${git.stagedCount} staged, ${git.unstagedCount} unstaged, ${git.untrackedCount} untracked)${colors.reset}`;
+  console.log(`  ${colors.bold}Git Status:${colors.reset}    ${statusText}`);
+
+  if (projectPorts.length > 0) {
+    const portsStr = projectPorts.map((p) => `${colors.green}:${p.port}${colors.reset} (PID ${p.pid}, ${p.processName}, ${p.uptime})`).join(', ');
+    console.log(`  ${colors.bold}Live Ports:${colors.reset}    ${portsStr}`);
+  } else {
+    console.log(`  ${colors.bold}Live Ports:${colors.reset}    ${colors.dim}No processes currently listening${colors.reset}`);
+  }
+
+  console.log(`\n  ${colors.bold}${colors.blue}── WHERE WE LEFT OFF ───────────────────────────────────────────${colors.reset}`);
+  console.log(`  ${colors.bold}• Last Task:${colors.reset}   ${notes.lastTask ? `${colors.bold}${notes.lastTask}${colors.reset}` : `${colors.dim}None recorded${colors.reset}`}`);
+  console.log(`  ${colors.bold}• Next Step:${colors.reset}   ${notes.nextStep ? `${colors.yellow}${colors.bold}${notes.nextStep}${colors.reset}` : `${colors.dim}None recorded${colors.reset}`}`);
+  console.log(`  ${colors.bold}• Blockers:${colors.reset}    ${notes.blockers ? `${colors.red}${colors.bold}${notes.blockers}${colors.reset}` : `${colors.green}None${colors.reset}`}`);
+
+  if (project.devCommand) {
+    console.log(`\n  ${colors.bold}${colors.magenta}── QUICK START ─────────────────────────────────────────────────${colors.reset}`);
+    console.log(`  Run ${colors.cyan}${project.devCommand}${colors.reset} or ${colors.cyan}devdesk run${colors.reset} to spin up dev server.\n`);
+  } else {
+    console.log('');
+  }
+}
+
+async function handleRun() {
+  const target = args[1] || '.';
+  const resolved = path.resolve(target);
+  const projects = ProjectService.getAllProjects();
+  const project = projects.find((p) => p.path === resolved) || projects.find((p) => p.isDefault) || projects[0];
+
+  if (!project) {
+    console.error(`${colors.red}✖ No registered projects found. Run 'devdesk add .' first.${colors.reset}`);
+    process.exit(1);
+  }
+
+  const cmd = project.devCommand || 'npm run dev';
+  console.log(`\n${colors.green}▶ Starting dev server:${colors.reset} ${colors.bold}${cmd}${colors.reset} in ${colors.dim}${project.path}${colors.reset}\n`);
+
+  const child = spawn(cmd, {
+    cwd: project.path,
+    shell: true,
+    stdio: 'inherit',
+    env: { ...process.env, ...project.envVars },
+  });
+
+  child.on('exit', (code) => {
+    process.exit(code || 0);
+  });
+}
+
 function handleHelp() {
   console.log(`
 ${colors.bold}${colors.cyan}DevDesk CLI${colors.reset} - Developer Workstation HUD & Project Manager
 
 ${colors.bold}USAGE:${colors.reset}
   devdesk add [path] [name]    Register a project directory (default: '.')
+  devdesk resume [project]     Print summary of where you stopped & what's next
+  devdesk run [project]        Run project dev server command in foreground
   devdesk list                 List all registered projects, branches, and live ports
   devdesk ports                List all active host listening ports & mapped processes
   devdesk help                 Show this help manual
 
 ${colors.bold}EXAMPLES:${colors.reset}
+  devdesk resume
   devdesk add .
-  devdesk add ~/projects/my-api "Backend API"
+  devdesk run
   devdesk list
 `);
 }
@@ -142,6 +238,12 @@ async function main() {
   switch (command) {
     case 'add':
       await handleAdd();
+      break;
+    case 'resume':
+      await handleResume();
+      break;
+    case 'run':
+      await handleRun();
       break;
     case 'list':
     case 'ls':
