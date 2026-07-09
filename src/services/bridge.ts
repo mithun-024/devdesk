@@ -5,6 +5,9 @@ import {
   WorkspaceSession,
   Project,
   ProjectGitSummary,
+  ProjectNotes,
+  Snapshot,
+  DevServerStatus,
   Task,
   TaskHistoryItem,
   SelectedDirectory,
@@ -100,6 +103,115 @@ export const fetchProjectGitSummary = async (path: string): Promise<ProjectGitSu
     }
   }
   return null;
+};
+
+// --- Phase 2: Where We Left Off Notes ---
+export const fetchProjectNotes = async (projectId: string): Promise<ProjectNotes | null> => {
+  if (window.electronBridge?.getProjectNotes) {
+    try {
+      return await window.electronBridge.getProjectNotes(projectId);
+    } catch (e) {
+      console.error(`Failed to fetch notes for ${projectId}:`, e);
+    }
+  }
+  return null;
+};
+
+export const saveProjectNotes = async (
+  projectId: string,
+  notes: Partial<ProjectNotes>
+): Promise<ProjectNotes | null> => {
+  if (window.electronBridge?.saveProjectNotes) {
+    try {
+      return await window.electronBridge.saveProjectNotes(projectId, notes);
+    } catch (e) {
+      console.error(`Failed to save notes for ${projectId}:`, e);
+    }
+  }
+  return null;
+};
+
+// --- Phase 2: Snapshots ---
+export const takeSnapshot = async (projectId: string): Promise<Snapshot | null> => {
+  if (window.electronBridge?.createSnapshot) {
+    try {
+      return await window.electronBridge.createSnapshot(projectId);
+    } catch (e) {
+      console.error(`Failed to take snapshot for ${projectId}:`, e);
+    }
+  }
+  return null;
+};
+
+export const fetchLatestSnapshot = async (projectId: string): Promise<Snapshot | null> => {
+  if (window.electronBridge?.getLatestSnapshot) {
+    try {
+      return await window.electronBridge.getLatestSnapshot(projectId);
+    } catch (e) {
+      console.error(`Failed to fetch latest snapshot for ${projectId}:`, e);
+    }
+  }
+  return null;
+};
+
+export const fetchSnapshotHistory = async (projectId: string, limit = 10): Promise<Snapshot[]> => {
+  if (window.electronBridge?.getSnapshotHistory) {
+    try {
+      return await window.electronBridge.getSnapshotHistory(projectId, limit);
+    } catch (e) {
+      console.error(`Failed to fetch snapshot history for ${projectId}:`, e);
+    }
+  }
+  return [];
+};
+
+// --- Phase 2: Dev Server Management ---
+export const startDevServer = async (
+  projectId: string
+): Promise<{ success: boolean; pid?: number; devCommand?: string }> => {
+  if (window.electronBridge?.startDevServer) {
+    try {
+      return await window.electronBridge.startDevServer(projectId);
+    } catch (e: any) {
+      return { success: false, pid: undefined, devCommand: undefined };
+    }
+  }
+  return { success: false };
+};
+
+export const stopDevServer = async (
+  projectId: string
+): Promise<{ success: boolean; message: string }> => {
+  if (window.electronBridge?.stopDevServer) {
+    try {
+      return await window.electronBridge.stopDevServer(projectId);
+    } catch (e: any) {
+      return { success: false, message: e.message || String(e) };
+    }
+  }
+  return { success: false, message: 'Bridge not available' };
+};
+
+export const fetchDevServerStatus = async (projectId: string): Promise<DevServerStatus> => {
+  if (window.electronBridge?.getDevServerStatus) {
+    try {
+      return await window.electronBridge.getDevServerStatus(projectId);
+    } catch (e) {
+      console.error(`Failed to get dev server status for ${projectId}:`, e);
+    }
+  }
+  return { isRunning: false };
+};
+
+export const fetchAllRunningDevServers = async (): Promise<Record<string, DevServerStatus>> => {
+  if (window.electronBridge?.getAllRunningDevServers) {
+    try {
+      return await window.electronBridge.getAllRunningDevServers();
+    } catch (e) {
+      console.error('Failed to get all running dev servers:', e);
+    }
+  }
+  return {};
 };
 
 // --- SQLite + Drizzle Workspaces (backward compatible) ---

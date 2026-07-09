@@ -5,7 +5,6 @@ import {
   Radio,
   GitBranch,
   Terminal,
-  ExternalLink,
   Trash2,
   RefreshCw,
   Search,
@@ -17,9 +16,14 @@ import {
   Clock,
   Cpu,
   Play,
+  Square,
   GitCommit,
   ChevronDown,
   ChevronUp,
+  FileEdit,
+  Camera,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useProjectStore } from '../../services/store';
 import { Project, MappedPort } from '../../types';
@@ -41,6 +45,9 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
     activeProjectId,
     livePorts,
     gitSummaries,
+    notesMap,
+    snapshotsMap,
+    devServersMap,
     isLoading,
     searchQuery,
     loadProjects,
@@ -51,20 +58,43 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
     killProcess,
     refreshGitSummary,
     setSearchQuery,
+    saveNotes,
+    takeProjectSnapshot,
+    startProjectDevServer,
+    stopProjectDevServer,
+    refreshDevServers,
   } = useProjectStore();
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [expandedCommits, setExpandedCommits] = useState<Record<string, boolean>>({});
+  const [expandedCards, setExpandedCards] = useState<Record<string, 'notes' | 'ports' | 'commits'>>({});
   const [showGlobalPorts, setShowGlobalPorts] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [localNotes, setLocalNotes] = useState<Record<string, { lastTask: string; nextStep: string; blockers: string }>>({});
+  const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadProjects();
     const interval = setInterval(() => {
       refreshLivePorts();
+      refreshDevServers();
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  // Sync incoming notes from store to local edit state
+  useEffect(() => {
+    const updated = { ...localNotes };
+    for (const [projId, note] of Object.entries(notesMap)) {
+      if (!updated[projId]) {
+        updated[projId] = {
+          lastTask: note.lastTask || '',
+          nextStep: note.nextStep || '',
+          blockers: note.blockers || '',
+        };
+      }
+    }
+    setLocalNotes(updated);
+  }, [notesMap]);
 
   const handleCopyPath = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -109,11 +139,59 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
     }
   };
 
-  const toggleCommits = (projectId: string) => {
-    setExpandedCommits((prev) => ({
+  const handleToggleTab = (projectId: string, tab: 'notes' | 'ports' | 'commits') => {
+    setExpandedCards((prev) => ({
       ...prev,
-      [projectId]: !prev[projectId],
+      [projectId]: prev[projectId] === tab ? 'notes' : tab,
     }));
+  };
+
+  const handleNoteChange = (projectId: string, field: 'lastTask' | 'nextStep' | 'blockers', value: string) => {
+    setLocalNotes((prev) => ({
+      ...prev,
+      [projectId]: {
+        ...(prev[projectId] || { lastTask: '', nextStep: '', blockers: '' }),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleNoteBlur = async (projectId: string) => {
+    const note = localNotes[projectId];
+    if (!note) return;
+    setSavingNotes((prev) => ({ ...prev, [projectId]: true }));
+    try {
+      await saveNotes(projectId, note);
+      onShowToast('Notes Saved', 'Updated "Where we left off"', 'success');
+    } catch (e) {
+      onShowToast('Save Failed', 'Could not save notes', 'error');
+    } finally {
+      setSavingNotes((prev) => ({ ...prev, [projectId]: false }));
+    }
+  };
+
+  const handleTakeSnapshot = async (projectId: string) => {
+    const snap = await takeProjectSnapshot(projectId);
+    if (snap) {
+      onShowToast('Snapshot Captured', `Saved commit ${snap.commitHash.substring(0, 7) || 'HEAD'} & ports`, 'success');
+    }
+  };
+
+  const handleToggleDevServer = async (project: Project) => {
+    const status = devServersMap[project.id];
+    if (status?.isRunning) {
+      const res = await stopProjectDevServer(project.id);
+      if (res.success) {
+        onShowToast('Dev Server Stopped', `${project.name}`, 'info');
+      }
+    } else {
+      const res = await startProjectDevServer(project.id);
+      if (res.success) {
+        onShowToast('Dev Server Started', `${project.devCommand || 'npm run dev'} (PID ${res.pid})`, 'success');
+      } else {
+        onShowToast('Launch Failed', 'Could not start dev server process', 'error');
+      }
+    }
   };
 
   // Filter projects by search
@@ -145,7 +223,7 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                 </span>
               </h1>
               <p className="text-xs text-[#565f89]">
-                Live process mapping, Git HUD telemetry, and workspace command center
+                Where we left off notes, auto-snapshots, dev command launcher, and live port mapping
               </p>
             </div>
           </div>
@@ -168,8 +246,9 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
             <button
               onClick={() => {
                 refreshLivePorts();
+                refreshDevServers();
                 loadProjects();
-                onShowToast('Refreshed', 'Telemetry and ports updated', 'info');
+                onShowToast('Refreshed', 'Telemetry, notes, and ports updated', 'info');
               }}
               className="p-2 rounded-lg bg-[#1f2335] text-[#9aa5ce] border border-[#292e42] hover:text-white hover:border-[#414868] transition-all"
               title="Refresh Ports & Git Status"
@@ -204,9 +283,11 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
 
           <div className="flex items-center gap-2 text-[11px] text-[#565f89] font-mono bg-[#16161e] px-3 py-1.5 rounded-lg border border-[#24283b]">
             <span className="text-[#9ece6a] font-bold">CLI:</span>
-            <span>devdesk add .</span>
+            <span>devdesk resume</span>
             <span className="text-[#414868]">|</span>
-            <span>devdesk list</span>
+            <span>devdesk run</span>
+            <span className="text-[#414868]">|</span>
+            <span>devdesk add .</span>
           </div>
         </div>
       </div>
@@ -289,7 +370,11 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
               const isActive = proj.id === activeProjectId;
               const git = gitSummaries[proj.id];
               const projectPorts = livePorts.filter((p) => p.projectId === proj.id);
-              const isCommitsOpen = Boolean(expandedCommits[proj.id]);
+              const devStatus = devServersMap[proj.id];
+              const activeSubTab = expandedCards[proj.id] || 'notes';
+              const notes = localNotes[proj.id] || { lastTask: '', nextStep: '', blockers: '' };
+              const snapshot = snapshotsMap[proj.id];
+              const isSaving = savingNotes[proj.id];
 
               return (
                 <div
@@ -341,13 +426,36 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Package Manager / Dev Command Pill */}
-                      {proj.devCommand && (
-                        <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#16161e] border border-[#292e42] text-[11px] font-mono text-[#bb9af7]">
-                          <Zap className="w-3 h-3 text-[#bb9af7]" />
-                          <span>{proj.devCommand}</span>
-                        </div>
-                      )}
+                      {/* Phase 2: One-Click Dev Server Launch Button */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {proj.devCommand ? (
+                          <button
+                            onClick={() => handleToggleDevServer(proj)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                              devStatus?.isRunning
+                                ? 'bg-[#f7768e]/15 text-[#f7768e] border-[#f7768e]/40 shadow-[0_0_10px_rgba(247,118,142,0.25)] hover:bg-[#f7768e] hover:text-white'
+                                : 'bg-[#9ece6a]/15 text-[#9ece6a] border-[#9ece6a]/40 shadow-[0_0_10px_rgba(158,206,106,0.2)] hover:bg-[#9ece6a] hover:text-[#16161e]'
+                            }`}
+                            title={devStatus?.isRunning ? 'Stop Dev Server' : `Run: ${proj.devCommand}`}
+                          >
+                            {devStatus?.isRunning ? (
+                              <>
+                                <Square className="w-3 h-3 fill-current" />
+                                <span>Stop Server</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3 h-3 fill-current" />
+                                <span>Start Dev</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="px-2.5 py-1 rounded-lg bg-[#16161e] border border-[#292e42] text-[11px] font-mono text-[#565f89]">
+                            no dev script
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Git Status Bar */}
@@ -363,7 +471,7 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                         git.isClean ? (
                           <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#9ece6a]/10 border border-[#9ece6a]/20 text-[#9ece6a] text-[11px]">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Working tree clean</span>
+                            <span>Clean working tree</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ff9e64]/10 border border-[#ff9e64]/20 text-[#ff9e64] text-[11px]">
@@ -375,136 +483,230 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                         <div className="text-[11px] text-[#565f89] font-mono">Checking Git status...</div>
                       )}
 
-                      {/* Ahead / Behind */}
-                      {git && (git.ahead > 0 || git.behind > 0) && (
-                        <div className="text-[11px] font-mono text-[#7dcfff] px-2 py-0.5 rounded bg-[#24283b]">
-                          ↑{git.ahead} ↓{git.behind}
+                      {/* Dev Command Label */}
+                      {proj.devCommand && (
+                        <div className="flex items-center gap-1 text-[11px] font-mono text-[#bb9af7] px-2 py-0.5 rounded bg-[#24283b]">
+                          <Zap className="w-3 h-3" />
+                          <span>{proj.devCommand}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Live Ports Section */}
-                  <div className="p-5 border-b border-[#24283b]/70 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-[#c0caf5] flex items-center gap-1.5">
-                        <Radio className="w-3.5 h-3.5 text-[#73daca]" />
-                        Active Ports & Processes
-                      </span>
-                      {projectPorts.length > 0 ? (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#9ece6a]/15 text-[#9ece6a] border border-[#9ece6a]/30 font-semibold">
-                          {projectPorts.length} LIVE
+                  {/* Phase 2: Navigation sub-tabs (Notes, Ports, Commits) */}
+                  <div className="px-5 pt-3 border-b border-[#24283b]/70 flex items-center justify-between text-xs bg-[#16161e]/40">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleToggleTab(proj.id, 'notes')}
+                        className={`pb-2.5 font-medium border-b-2 transition-all flex items-center gap-1.5 ${
+                          activeSubTab === 'notes'
+                            ? 'text-[#7dcfff] border-[#7dcfff]'
+                            : 'text-[#565f89] border-transparent hover:text-[#c0caf5]'
+                        }`}
+                      >
+                        <FileEdit className="w-3.5 h-3.5" />
+                        <span>Where We Left Off</span>
+                        {isSaving && <span className="text-[10px] text-[#7dcfff] animate-pulse">saving...</span>}
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleTab(proj.id, 'ports')}
+                        className={`pb-2.5 font-medium border-b-2 transition-all flex items-center gap-1.5 ${
+                          activeSubTab === 'ports'
+                            ? 'text-[#73daca] border-[#73daca]'
+                            : 'text-[#565f89] border-transparent hover:text-[#c0caf5]'
+                        }`}
+                      >
+                        <Radio className="w-3.5 h-3.5" />
+                        <span>Ports & PIDs</span>
+                        {projectPorts.length > 0 && (
+                          <span className="text-[10px] font-mono px-1.5 rounded-full bg-[#9ece6a]/20 text-[#9ece6a]">
+                            {projectPorts.length}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleTab(proj.id, 'commits')}
+                        className={`pb-2.5 font-medium border-b-2 transition-all flex items-center gap-1.5 ${
+                          activeSubTab === 'commits'
+                            ? 'text-[#ff9e64] border-[#ff9e64]'
+                            : 'text-[#565f89] border-transparent hover:text-[#c0caf5]'
+                        }`}
+                      >
+                        <GitCommit className="w-3.5 h-3.5" />
+                        <span>Recent Commits</span>
+                        <span className="text-[10px] font-mono px-1.5 rounded-full bg-[#24283b] text-[#9aa5ce]">
+                          {git?.recentCommits?.length || 0}
                         </span>
-                      ) : (
-                        <span className="text-[11px] text-[#565f89]">Idle (no listening ports)</span>
-                      )}
+                      </button>
                     </div>
 
-                    {projectPorts.length > 0 ? (
-                      <div className="space-y-2">
-                        {projectPorts.map((p) => (
-                          <div
-                            key={p.port}
-                            className="p-3 rounded-xl bg-[#16161e] border border-[#24283b] flex items-center justify-between text-xs shadow-inner"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ece6a] opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ece6a]"></span>
-                              </span>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-white text-sm">
-                                    :{p.port}
-                                  </span>
-                                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-[#24283b] text-[#7dcfff]">
-                                    {p.processName}
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-[#565f89] flex items-center gap-3 mt-0.5 font-mono">
-                                  <span>PID {p.pid}</span>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-[#7dcfff]" />
-                                    {p.uptime}
-                                  </span>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-1">
-                                    <Cpu className="w-3 h-3 text-[#ff9e64]" />
-                                    {p.memoryMb} MB
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => handleKillPort(p)}
-                              className="px-2.5 py-1.5 rounded-lg bg-[#f7768e]/10 text-[#f7768e] border border-[#f7768e]/20 hover:bg-[#f7768e] hover:text-white transition-all text-xs font-semibold shadow-[0_0_8px_rgba(247,118,142,0.15)]"
-                              title="Kill Process"
-                            >
-                              Kill
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-3 rounded-xl bg-[#16161e]/50 border border-dashed border-[#24283b] text-[11px] text-[#565f89] flex items-center justify-between">
-                        <span>No processes currently listening for this project.</span>
-                        {proj.devCommand && (
-                          <span className="text-[#bb9af7] font-mono">Run: {proj.devCommand}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Recent Commits Section */}
-                  <div className="px-5 py-3 border-b border-[#24283b]/70 bg-[#16161e]/40">
-                    <button
-                      onClick={() => toggleCommits(proj.id)}
-                      className="w-full flex items-center justify-between text-xs text-[#9aa5ce] hover:text-white transition-colors"
-                    >
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <GitCommit className="w-3.5 h-3.5 text-[#ff9e64]" />
-                        Recent Commits ({git?.recentCommits?.length || 0})
-                      </span>
-                      {isCommitsOpen ? (
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5" />
+                    {/* Snapshot button & status */}
+                    <div className="flex items-center gap-2 pb-2">
+                      {snapshot && (
+                        <span
+                          className="text-[10px] font-mono text-[#565f89] hidden sm:inline"
+                          title={`Last snapshot: ${new Date(snapshot.createdAt).toLocaleTimeString()}`}
+                        >
+                          Snapshot: {snapshot.commitHash ? snapshot.commitHash.substring(0, 7) : 'HEAD'}
+                        </span>
                       )}
-                    </button>
+                      <button
+                        onClick={() => handleTakeSnapshot(proj.id)}
+                        className="p-1 rounded text-[#565f89] hover:text-[#7dcfff] hover:bg-[#24283b] transition-colors"
+                        title="Take Instant Snapshot"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
 
-                    {/* Expandable commits list */}
-                    {isCommitsOpen && (
-                      <div className="mt-3 space-y-2">
-                        {git?.recentCommits && git.recentCommits.length > 0 ? (
-                          git.recentCommits.map((c) => (
+                  {/* Sub-tab 1: Where We Left Off Notes */}
+                  {activeSubTab === 'notes' && (
+                    <div className="p-5 space-y-3.5 bg-[#16161e]/20">
+                      <div>
+                        <label className="text-[11px] font-semibold text-[#7dcfff] uppercase tracking-wider block mb-1">
+                          Last Task Worked On
+                        </label>
+                        <input
+                          type="text"
+                          value={notes.lastTask}
+                          onChange={(e) => handleNoteChange(proj.id, 'lastTask', e.target.value)}
+                          onBlur={() => handleNoteBlur(proj.id)}
+                          placeholder="e.g. Completed Phase 1 MVP dashboard and port mapper"
+                          className="w-full px-3 py-1.5 text-xs bg-[#16161e] border border-[#292e42] rounded-lg text-white placeholder-[#565f89] focus:outline-none focus:border-[#7dcfff]/60 transition-colors"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-[#ff9e64] uppercase tracking-wider block mb-1">
+                            Next Step
+                          </label>
+                          <input
+                            type="text"
+                            value={notes.nextStep}
+                            onChange={(e) => handleNoteChange(proj.id, 'nextStep', e.target.value)}
+                            onBlur={() => handleNoteBlur(proj.id)}
+                            placeholder="e.g. Wire dev server launcher and auto-snapshots"
+                            className="w-full px-3 py-1.5 text-xs bg-[#16161e] border border-[#292e42] rounded-lg text-white placeholder-[#565f89] focus:outline-none focus:border-[#ff9e64]/60 transition-colors"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-[#f7768e] uppercase tracking-wider block mb-1">
+                            Active Blockers
+                          </label>
+                          <input
+                            type="text"
+                            value={notes.blockers}
+                            onChange={(e) => handleNoteChange(proj.id, 'blockers', e.target.value)}
+                            onBlur={() => handleNoteBlur(proj.id)}
+                            placeholder="e.g. None (or specific blocker)"
+                            className="w-full px-3 py-1.5 text-xs bg-[#16161e] border border-[#292e42] rounded-lg text-white placeholder-[#565f89] focus:outline-none focus:border-[#f7768e]/60 transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-tab 2: Active Ports */}
+                  {activeSubTab === 'ports' && (
+                    <div className="p-5 space-y-2.5">
+                      {projectPorts.length > 0 ? (
+                        <div className="space-y-2">
+                          {projectPorts.map((p) => (
                             <div
-                              key={c.hash}
-                              className="p-2 rounded-lg bg-[#16161e] border border-[#24283b] text-xs flex items-start justify-between gap-3"
+                              key={p.port}
+                              className="p-3 rounded-xl bg-[#16161e] border border-[#24283b] flex items-center justify-between text-xs shadow-inner"
                             >
-                              <div className="space-y-0.5 overflow-hidden">
-                                <div className="text-white font-medium truncate">{c.message}</div>
-                                <div className="text-[11px] text-[#565f89] flex items-center gap-2">
-                                  <span>{c.author}</span>
-                                  <span>•</span>
-                                  <span>{c.relativeDate}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9ece6a] opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#9ece6a]"></span>
+                                </span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold text-white text-sm">
+                                      :{p.port}
+                                    </span>
+                                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-[#24283b] text-[#7dcfff]">
+                                      {p.processName}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-[#565f89] flex items-center gap-3 mt-0.5 font-mono">
+                                    <span>PID {p.pid}</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-[#7dcfff]" />
+                                      {p.uptime}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <Cpu className="w-3 h-3 text-[#ff9e64]" />
+                                      {p.memoryMb} MB
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#24283b] text-[#7dcfff] shrink-0">
-                                {c.hash}
-                              </span>
+
+                              <button
+                                onClick={() => handleKillPort(p)}
+                                className="px-2.5 py-1.5 rounded-lg bg-[#f7768e]/10 text-[#f7768e] border border-[#f7768e]/20 hover:bg-[#f7768e] hover:text-white transition-all text-xs font-semibold"
+                                title="Kill Process"
+                              >
+                                Kill
+                              </button>
                             </div>
-                          ))
-                        ) : (
-                          <div className="text-[11px] text-[#565f89] py-1">No commits found.</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-[#16161e]/50 border border-dashed border-[#24283b] text-xs text-[#565f89] flex items-center justify-between">
+                          <span>No processes currently listening for this project.</span>
+                          {proj.devCommand && (
+                            <button
+                              onClick={() => handleToggleDevServer(proj)}
+                              className="text-[#9ece6a] hover:underline font-mono text-[11px]"
+                            >
+                              Launch dev server
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sub-tab 3: Recent Commits */}
+                  {activeSubTab === 'commits' && (
+                    <div className="p-5 space-y-2">
+                      {git?.recentCommits && git.recentCommits.length > 0 ? (
+                        git.recentCommits.map((c) => (
+                          <div
+                            key={c.hash}
+                            className="p-2.5 rounded-lg bg-[#16161e] border border-[#24283b] text-xs flex items-start justify-between gap-3"
+                          >
+                            <div className="space-y-0.5 overflow-hidden">
+                              <div className="text-white font-medium truncate">{c.message}</div>
+                              <div className="text-[11px] text-[#565f89] flex items-center gap-2">
+                                <span>{c.author}</span>
+                                <span>•</span>
+                                <span>{c.relativeDate}</span>
+                              </div>
+                            </div>
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#24283b] text-[#7dcfff] shrink-0">
+                              {c.hash}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-[#565f89] p-2">No recent commits found.</div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Card Actions Footer */}
-                  <div className="p-4 bg-[#1a1b26] flex items-center justify-between gap-2">
+                  <div className="p-4 bg-[#1a1b26] flex items-center justify-between gap-2 border-t border-[#24283b]/60">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onOpenTerminal(proj)}
@@ -523,7 +725,7 @@ export const ProjectListView: React.FC<ProjectListViewProps> = ({
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDeleteProject(proj)}
                         className="p-1.5 rounded-lg text-[#565f89] hover:text-[#f7768e] hover:bg-[#f7768e]/10 transition-colors"

@@ -87,6 +87,33 @@ export interface ProjectGitSummary {
   recentCommits: RecentCommit[];
 }
 
+export interface ProjectNotes {
+  id: string;
+  projectId: string;
+  lastTask: string;
+  nextStep: string;
+  blockers: string;
+  updatedAt: string;
+}
+
+export interface Snapshot {
+  id: string;
+  projectId: string;
+  commitHash: string;
+  commitMessage: string;
+  branch: string;
+  uncommittedCount: number;
+  activePorts: Array<{ port: number; pid: number; processName: string; uptime: string }>;
+  createdAt: string;
+}
+
+export interface DevServerStatus {
+  isRunning: boolean;
+  pid?: number;
+  devCommand?: string;
+  startedAt?: string;
+}
+
 export interface ActivePort {
   port: number;
   pid: number;
@@ -160,6 +187,21 @@ export interface ElectronBridge {
 
   // Phase 1: Git Project Summary Bridge
   getProjectGitSummary: (path: string) => Promise<ProjectGitSummary>;
+
+  // Phase 2: Where We Left Off Notes Bridge
+  getProjectNotes: (projectId: string) => Promise<ProjectNotes>;
+  saveProjectNotes: (projectId: string, notes: Partial<ProjectNotes>) => Promise<ProjectNotes>;
+
+  // Phase 2: Snapshots Bridge
+  createSnapshot: (projectId: string) => Promise<Snapshot>;
+  getLatestSnapshot: (projectId: string) => Promise<Snapshot | null>;
+  getSnapshotHistory: (projectId: string, limit?: number) => Promise<Snapshot[]>;
+
+  // Phase 2: Managed Dev Server Bridge
+  startDevServer: (projectId: string) => Promise<{ success: boolean; pid?: number; devCommand?: string }>;
+  stopDevServer: (projectId: string) => Promise<{ success: boolean; message: string }>;
+  getDevServerStatus: (projectId: string) => Promise<DevServerStatus>;
+  getAllRunningDevServers: () => Promise<Record<string, DevServerStatus>>;
 
   // SQLite + Drizzle Workspaces
   getWorkspaces: () => Promise<WorkspaceSession[]>;

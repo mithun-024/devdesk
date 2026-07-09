@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import { Project, MappedPort, ProjectGitSummary } from '../types';
+import {
+  Project,
+  MappedPort,
+  ProjectGitSummary,
+  ProjectNotes,
+  Snapshot,
+  DevServerStatus,
+} from '../types';
 import {
   fetchProjects,
   registerProject as apiRegisterProject,
@@ -7,6 +14,13 @@ import {
   fetchMappedPorts,
   killProcess as apiKillProcess,
   fetchProjectGitSummary,
+  fetchProjectNotes,
+  saveProjectNotes as apiSaveProjectNotes,
+  takeSnapshot as apiTakeSnapshot,
+  fetchLatestSnapshot,
+  startDevServer as apiStartDevServer,
+  stopDevServer as apiStopDevServer,
+  fetchAllRunningDevServers,
 } from './bridge';
 
 interface ProjectState {
@@ -14,6 +28,9 @@ interface ProjectState {
   activeProjectId: string;
   livePorts: MappedPort[];
   gitSummaries: Record<string, ProjectGitSummary>;
+  notesMap: Record<string, ProjectNotes>;
+  snapshotsMap: Record<string, Snapshot | null>;
+  devServersMap: Record<string, DevServerStatus>;
   isLoading: boolean;
   searchQuery: string;
 
@@ -27,6 +44,15 @@ interface ProjectState {
   refreshGitSummary: (projectId: string) => Promise<void>;
   refreshAllGitSummaries: () => Promise<void>;
   setSearchQuery: (query: string) => void;
+
+  // Phase 2 Actions
+  loadProjectNotes: (projectId: string) => Promise<void>;
+  saveNotes: (projectId: string, notes: Partial<ProjectNotes>) => Promise<void>;
+  takeProjectSnapshot: (projectId: string) => Promise<Snapshot | null>;
+  loadLatestSnapshot: (projectId: string) => Promise<void>;
+  startProjectDevServer: (projectId: string) => Promise<{ success: boolean; pid?: number }>;
+  stopProjectDevServer: (projectId: string) => Promise<{ success: boolean; message: string }>;
+  refreshDevServers: () => Promise<void>;
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
@@ -34,6 +60,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   activeProjectId: '',
   livePorts: [],
   gitSummaries: {},
+  notesMap: {},
+  snapshotsMap: {},
+  devServersMap: {},
   isLoading: false,
   searchQuery: '',
 
@@ -51,9 +80,15 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
       set({ projects: list, activeProjectId: newActive, isLoading: false });
 
-      // Automatically refresh live ports and git summaries
+      // Automatically refresh live ports, git summaries, notes, and snapshots
       get().refreshLivePorts();
       get().refreshAllGitSummaries();
+      get().refreshDevServers();
+
+      for (const proj of list) {
+        get().loadProjectNotes(proj.id);
+        get().loadLatestSnapshot(proj.id);
+      }
     } catch (e) {
       console.error('Failed to load projects into store:', e);
       set({ isLoading: false });
@@ -103,8 +138,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   killProcess: async (pid: number) => {
     const res = await apiKillProcess(pid);
     if (res.success) {
-      // Refresh mapped ports immediately
       await get().refreshLivePorts();
+      await get().refreshDevServers();
     }
     return res;
   },
@@ -137,5 +172,100 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   setSearchQuery: (query: string) => {
     set({ searchQuery: query });
+  },
+
+  // Phase 2 Implementation
+  loadProjectNotes: async (projectId: string) => {
+    try {
+      const notes = await fetchProjectNotes(projectId);
+      if (notes) {
+        set((state) => ({
+          notesMap: {
+            ...state.notesMap,
+            [projectId]: notes,
+          },
+        }));
+      }
+    } catch (e) {
+      console.error(`Failed to load notes for ${projectId}:`, e);
+    }
+  },
+
+  saveNotes: async (projectId: string, notes: Partial<ProjectNotes>) => {
+    try {
+      const saved = await apiSaveProjectNotes(projectId, notes);
+      if (saved) {
+        set((state) => ({
+          notesMap: {
+            ...state.notesMap,
+            [projectId]: saved,
+          },
+        }));
+      }
+    } catch (e) {
+      console.error(`Failed to save notes for ${projectId}:`, e);
+    }
+  },
+
+  takeProjectSnapshot: async (projectId: string) => {
+    try {
+      const snap = await apiTakeSnapshot(projectId);
+      if (snap) {
+        set((state) => ({
+          snapshotsMap: {
+            ...state.snapshotsMap,
+            [projectId]: snap,
+          },
+        }));
+        return snap;
+      }
+    } catch (e) {
+      console.error(`Failed to take snapshot for ${projectId}:`, e);
+    }
+    return null;
+  },
+
+  loadLatestSnapshot: async (projectId: string) => {
+    try {
+      const snap = await fetchLatestSnapshot(projectId);
+      set((state) => ({
+        snapshotsMap: {
+          ...state.snapshotsMap,
+          [projectId]: snap,
+        },
+      }));
+    } catch (e) {
+      console.error(`Failed to load snapshot for ${projectId}:`, e);
+    }
+  },
+
+  startProjectDevServer: async (projectId: string) => {
+    const res = await apiStartDevServer(projectId);
+    if (res.success) {
+      await get().refreshDevServers();
+      // Also rescan ports shortly after
+      setTimeout(() => {
+        get().refreshLivePorts();
+      }, 1500);
+    }
+    return res;
+  },
+
+  stopProjectDevServer: async (projectId: string) => {
+    const res = await apiStopDevServer(projectId);
+    if (res.success) {
+      await get().refreshDevServers();
+      get().refreshLivePorts();
+    }
+    return res;
+  },
+
+  refreshDevServers: async () => {
+    try {
+      const servers = await fetchAllRunningDevServers();
+      set({ devServersMap: servers });
+    } catch (e) {
+      console.error('Failed to refresh dev servers:', e);
+    }
   },
 }));
