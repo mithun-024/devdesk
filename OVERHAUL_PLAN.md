@@ -26,30 +26,30 @@ Electron Main Process
 
 ## 📅 Roadmap Phases
 
-### 🔹 Phase 1: MVP (Core Projects & Live Ports)
-- [ ] **CLI Registration**: `devdesk add <path>` (e.g. `devdesk add .`) to register project folder into SQLite.
-- [ ] **Port Detection & Process Mapping**:
+### 🔹 Phase 1: MVP (Core Projects & Live Ports) — ✅ Complete
+- [x] **CLI Registration**: `devdesk add <path>` (e.g. `devdesk add .`) to register project folder into SQLite.
+- [x] **Port Detection & Process Mapping**:
   - Polling `lsof` / `ss` every 3 seconds.
   - Resolving listening socket PIDs to project roots via `/proc/<pid>/cwd`.
   - Process metrics: PID, memory (RSS), CPU, uptime.
   - One-click Kill button (`SIGTERM` / `SIGKILL`).
-- [ ] **Git HUD**:
+- [x] **Git HUD**:
   - Current branch, clean/dirty working directory status.
   - Last 5 commits with relative timestamps.
-- [ ] **Project Dashboard**: Clean OLED Tokyo Night card/table layout of all tracked projects.
+- [x] **Project Dashboard**: Clean OLED Tokyo Night card/table layout of all tracked projects.
 
-### 🔹 Phase 2: “Where We Left Off” Engine
-- [ ] **Per-Project Daily Notes**: Last task, next step, active blockers.
-- [ ] **Auto-Snapshots**: On exit or workspace switch, capture last commit, uncommitted file count, and active listening ports.
-- [ ] **`devdesk resume` CLI**: Terminal output summarizing where you stopped and what's next.
-- [ ] **One-Click Dev Server**: Detect `scripts.dev` / `start` in `package.json` and provide one-click start/stop.
+### 🔹 Phase 2: “Where We Left Off” Engine — ✅ Complete
+- [x] **Per-Project Daily Notes**: Last task, next step, active blockers.
+- [x] **Auto-Snapshots**: On exit or workspace switch, capture last commit, uncommitted file count, and active listening ports.
+- [x] **`devdesk resume` CLI**: Terminal output summarizing where you stopped and what's next.
+- [x] **One-Click Dev Server**: Detect `scripts.dev` / `start` in `package.json` and provide one-click start/stop.
 
-### 🔹 Phase 3: Roadmap & Task Management
-- [ ] **Kanban Board**: Todo / Doing / Done task management per project.
+### 🔹 Phase 3: Roadmap & Task Management — 🟡 In Progress
+- [x] **Kanban Board**: Todo / Doing / Done task management (implemented in TaskTrackerView).
 - [ ] **React Flow Mindmap**: Interactive tree (Project → Features → Tasks) using `@xyflow/react`.
 - [ ] **Git Commit Task Automation**: Closing tasks via `#<id>` in commit messages.
 
-### 🔹 Phase 4: AI-Agent Integration & MCP Server (Standout Feature)
+### 🔹 Phase 4: AI-Agent Integration & MCP Server (Standout Feature) — ⚪ Planned
 - [ ] **AI Session Log Parser**: Read local session logs from OpenCode, Claude Code, Aider, etc., to display "What the agent did last".
 - [ ] **`CONTEXT.md` / Resume Prompt Generator**: One-click prompt synthesis for pasting into AI agents.
 - [ ] **DevDesk MCP Server**: Local stdio Model Context Protocol server exposing roadmap, task lists, and context directly to AI coding agents.
