@@ -1,62 +1,62 @@
 # DevDesk
 
-A developer workstation HUD and command center with deep Linux system integration, process-to-port mapping, an Obsidian-style progress canvas, and a native Model Context Protocol (MCP) server for AI coding agents.
+A developer workstation HUD and control plane providing real-time process-to-port mapping, interactive roadmap graph, background dev server lifecycle management, and a native Model Context Protocol (MCP) server for AI coding agents.
 
 ---
 
-## System Architecture
+## Architecture
 
 ```mermaid
-flowchart TB
-    subgraph UI["Renderer (Chromium + React 19 + Tailwind)"]
-        Dash["Projects Dashboard"]
-        Canvas["Obsidian Canvas Tree (@xyflow/react)"]
-        TerminalUI["Xterm.js Terminal Drawer"]
-        Kanban["SQLite Task Tracker"]
+flowchart LR
+    subgraph Client["Desktop Workstation Shell"]
+        direction TB
+        UI["React 19 Renderer<br/>• Projects Dashboard<br/>• Roadmap Canvas (@xyflow/react)<br/>• Terminal Drawer (Xterm.js)<br/>• SQLite Task Tracker"]
+        IPC["Typed IPC Bridge<br/>(preload.cjs)"]
+        UI <--> IPC
     end
 
-    subgraph IPC["Secure IPC Bridge (preload.cjs)"]
-        Bridge["ContextBridge API"]
+    subgraph Core["Electron Host & Services"]
+        direction TB
+        Main["Main Controller (main.cjs)"]
+        Services["• ProjectService (detection & scripts)<br/>• PortService (socket & PID mapping)<br/>• GitService (worktrees & diffs)<br/>• DevServerService (process manager)<br/>• NotesService (snapshots & resume)<br/>• AgentService (transcript watcher)"]
+        MCP["Stdio MCP Server<br/>(McpService.cjs)"]
+        Main --- Services
+        Main --- MCP
     end
 
-    subgraph Core["Main Process (Node.js + Native Modules)"]
-        ProjSvc["ProjectService"]
-        PortSvc["PortService"]
-        GitSvc["GitService"]
-        DevSvc["DevServerService"]
-        NoteSvc["NotesService"]
-        AgentSvc["AgentService"]
-        McpSvc["McpService (stdio)"]
-    end
-
-    subgraph OS["Linux Operating System"]
-        ProcFS["/proc filesystem (PID to CWD mapping)"]
-        Sockets["lsof / ss socket telemetry"]
-        PTY["node-pty (/bin/bash)"]
+    subgraph System["Linux Host OS"]
+        direction TB
+        Kernel["/proc filesystem<br/>(PID to CWD mapping)"]
+        Net["lsof & ss socket scanner"]
+        PTY["node-pty hardware /bin/bash"]
         DB[("SQLite WAL (devdesk.db)")]
-        Vault["GNOME Keyring / KWallet (safeStorage)"]
+        Vault["GNOME Keyring / KWallet"]
     end
 
-    subgraph AI["AI Agent Ecosystem"]
-        AGY["Antigravity CLI / AI Agents"]
+    subgraph Agents["AI Coding Agents"]
+        direction TB
+        AGY["Antigravity CLI / Cursor / Claude Code"]
     end
 
-    UI <--> IPC
-    IPC <--> Core
-    Core <--> OS
-    AGY <-->|"Model Context Protocol (devdesk mcp)"| McpSvc
+    IPC <-->|"ContextBridge IPC"| Main
+    Services <--> Kernel
+    Services <--> Net
+    Services <--> PTY
+    Services <--> DB
+    Services <--> Vault
+    AGY <-->|"Model Context Protocol (devdesk mcp)"| MCP
 ```
 
 ---
 
 ## Core Capabilities
 
-- **Process-to-Project Port Mapping**: Scans host network sockets via `lsof` and `ss`. Resolves listening socket PIDs to exact repository roots using `/proc/<pid>/cwd`. Displays process memory (`VmRSS`), uptime, and provides one-click `SIGTERM` / `SIGKILL` termination.
+- **Process-to-Project Port Mapping**: Scans host network sockets via `lsof` and `ss`. Resolves listening socket PIDs to repository roots using `/proc/<pid>/cwd`. Displays process memory (`VmRSS`), uptime, and provides one-click `SIGTERM` / `SIGKILL` termination.
 - **Where We Left Off Engine**: Automatically snapshots Git state, uncommitted files, and active ports on exit or workspace switch. Persists daily notes (last task, next step, active blockers) per repository.
-- **Obsidian Canvas Roadmap**: Minimalist 2D node graph rendered with `@xyflow/react`. Uses a dark graphite layout with thin connectors and non-distracting status indicators.
-- **Antigravity CLI & MCP Integration**: Embedded local stdio Model Context Protocol (MCP) server (`devdesk mcp`). Allows AI agents to read context, inspect the roadmap, update task nodes in real time, and persist session summaries.
-- **One-Click Dev Server Management**: Detects scripts across Node.js (`npm`, `pnpm`, `yarn`, `bun`), Rust (`cargo`), Go, and Python. Starts and stops background servers with process tree management.
-- **Hardware-Accelerated Terminal**: Linux `/bin/bash` terminal backed by `node-pty` and Xterm.js. Available as both a full view and a global slide-up drawer (`Ctrl + \``).
+- **Interactive Roadmap Canvas**: 2D node graph rendered with `@xyflow/react` to map project epics, features, and tasks with live agent execution indicators and dependency tracking.
+- **AI Agent MCP Integration**: Embedded stdio Model Context Protocol server (`devdesk mcp`). Allows AI agents to read context, inspect the roadmap, update task nodes in real time, and persist session summaries.
+- **Dev Server Process Manager**: Detects scripts across Node.js (`npm`, `pnpm`, `yarn`, `bun`), Rust (`cargo`), Go, and Python. Starts and stops background servers with process tree management.
+- **Hardware-Accelerated Terminal**: Linux `/bin/bash` terminal backed by `node-pty` and Xterm.js. Available as both a full view and a slide-up drawer (`Ctrl + \``).
 - **Persistent Local Database**: Backed by embedded SQLite via Drizzle ORM in `~/.config/devdesk/devdesk.db`. Zero network dependency; all data remains local.
 - **OS Keychain Vault**: Hardware-backed secret storage using Linux `libsecret` via Electron `safeStorage`.
 
