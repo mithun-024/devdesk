@@ -11,7 +11,9 @@
   "scripts": {
     "dev": "concurrently -k \"vite --port 1420\" \"wait-on tcp:1420 && electron .\"",
     "start": "electron .",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "install-desktop": "node bin/devdesk.js install-desktop",
+    "uninstall-desktop": "node bin/devdesk.js uninstall-desktop"
   },
   "repository": {
     "type": "git",

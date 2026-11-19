@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, Tray, Menu } = require('electron');
 const path = require('path');
 const { exec, execFile } = require('child_process');
 const fs = require('fs');
@@ -12,6 +12,8 @@ const DevServerService = require('./services/DevServerService.cjs');
 const AgentService = require('./services/AgentService.cjs');
 
 let mainWindow = null;
+let tray = null;
+app.isQuitting = false;
 const ptyProcesses = new Map();
 
 function getProcessMemory(pid) {
@@ -28,13 +30,16 @@ function getProcessMemory(pid) {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '../assets/icon.png');
+
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 880,
     minWidth: 980,
     minHeight: 660,
     frame: false,
-    backgroundColor: '#16161e', // Tokyo Night Twilight canvas
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
+    backgroundColor: '#16161e',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -56,11 +61,17 @@ function createWindow() {
     mainWindow.loadFile(prodPath);
   }
 
-  // Phase 2: Auto-snapshot when user closes the app
-  mainWindow.on('close', async () => {
+  // Minimize to tray on close, snapshot state
+  mainWindow.on('close', async (e) => {
     try {
       await NotesService.autoSnapshotAll();
-    } catch (e) {}
+    } catch (err) {}
+
+    if (!app.isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
+      return false;
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -75,6 +86,65 @@ function createWindow() {
   });
 }
 
+function setupTray() {
+  const trayIconPath = path.join(__dirname, '../assets/tray.png');
+  const appIconPath = path.join(__dirname, '../assets/icon.png');
+  const icon = fs.existsSync(trayIconPath) ? trayIconPath : appIconPath;
+
+  if (!fs.existsSync(icon)) return;
+
+  try {
+    tray = new Tray(icon);
+    tray.setToolTip('DevDesk - Developer Workstation HUD');
+
+    const updateTrayMenu = () => {
+      const contextMenu = Menu.buildFromTemplate([
+        {
+          label: 'Show DevDesk',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.focus();
+            }
+          },
+        },
+        {
+          label: 'Hide DevDesk',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.hide();
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit DevDesk',
+          click: () => {
+            app.isQuitting = true;
+            app.quit();
+          },
+        },
+      ]);
+      tray.setContextMenu(contextMenu);
+    };
+
+    updateTrayMenu();
+
+    tray.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    });
+  } catch (err) {
+    console.warn('System tray initialization error:', err);
+  }
+}
+
 app.whenReady().then(() => {
   // Initialize SQLite + Drizzle DB
   try {
@@ -84,14 +154,24 @@ app.whenReady().then(() => {
   }
 
   createWindow();
+  setupTray();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    } else if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
 });
 
+app.on('before-quit', () => {
+  app.isQuitting = true;
+});
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (app.isQuitting) {
     app.quit();
   }
 });

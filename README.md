@@ -74,12 +74,14 @@ DevDesk includes a command-line interface executable via `devdesk` or `node bin/
 | `devdesk list` | List all tracked projects, branches, and mapped ports |
 | `devdesk ports` | Print all host listening sockets mapped to registered projects |
 | `devdesk mcp` | Start stdio Model Context Protocol server for AI coding agents |
+| `devdesk install-desktop` | Register DevDesk in Linux application launcher & dock |
+| `devdesk uninstall-desktop` | Remove DevDesk launcher and system icons from Linux desktop |
 
 ---
 
 ## Quick Start
 
-### Development Mode
+### 1. Development Mode
 
 ```bash
 npm install
@@ -88,7 +90,25 @@ npm run dev
 
 Spawns the local Vite renderer with hot-reload and launches the standalone Electron desktop shell.
 
-### Production Build
+### 2. Desktop Launcher Installation (App Menu & System Tray)
+
+Register DevDesk into your Linux application grid, dock, and app search:
+
+```bash
+npm run install-desktop
+```
+
+Once installed, search for `DevDesk` from your application launcher or press the Super key. When running, closing the window minimizes DevDesk to the Linux system tray bar for background monitoring.
+
+### 3. Uninstalling the Desktop Launcher
+
+To cleanly remove the desktop launcher entry and application icons from your system:
+
+```bash
+npm run uninstall-desktop
+```
+
+### 4. Production Build
 
 ```bash
 npm run build

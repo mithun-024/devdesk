@@ -5,7 +5,8 @@ const require = createRequire(import.meta.url);
 
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const os = require('os');
+const { spawn, exec } = require('child_process');
 const dbManager = require('../electron/db/index.cjs');
 
 // Initialize database
@@ -215,22 +216,122 @@ async function handleRun() {
   });
 }
 
+async function handleInstallDesktop() {
+  const projectRoot = path.resolve(path.join(path.dirname(new URL(import.meta.url).pathname), '..'));
+  const home = os.homedir();
+  const applicationsDir = path.join(home, '.local', 'share', 'applications');
+  const iconsScalableDir = path.join(home, '.local', 'share', 'icons', 'hicolor', 'scalable', 'apps');
+  const iconsPngDir = path.join(home, '.local', 'share', 'icons', 'hicolor', '256x256', 'apps');
+  const fallbackIconsDir = path.join(home, '.local', 'share', 'icons');
+  const desktopFilePath = path.join(applicationsDir, 'devdesk.desktop');
+
+  const svgSrc = path.join(projectRoot, 'assets', 'icon.svg');
+  const pngSrc = path.join(projectRoot, 'assets', 'icon.png');
+
+  try {
+    fs.mkdirSync(applicationsDir, { recursive: true });
+    fs.mkdirSync(iconsScalableDir, { recursive: true });
+    fs.mkdirSync(iconsPngDir, { recursive: true });
+
+    if (fs.existsSync(svgSrc)) {
+      fs.copyFileSync(svgSrc, path.join(iconsScalableDir, 'devdesk.svg'));
+    }
+    if (fs.existsSync(pngSrc)) {
+      fs.copyFileSync(pngSrc, path.join(iconsPngDir, 'devdesk.png'));
+      fs.copyFileSync(pngSrc, path.join(fallbackIconsDir, 'devdesk.png'));
+    }
+
+    const desktopContent = `[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DevDesk
+GenericName=Developer Workstation HUD
+Comment=Developer workstation HUD with process mapping, visual roadmap canvas, and AI agent integration
+Exec=/usr/bin/env bash -c "cd '${projectRoot}' && npm start"
+Icon=devdesk
+Terminal=false
+Categories=Development;IDE;Utility;
+StartupWMClass=devdesk
+Keywords=development;terminal;git;ports;roadmap;
+`;
+
+    fs.writeFileSync(desktopFilePath, desktopContent, 'utf8');
+
+    // Update system caches
+    try {
+      exec(`update-desktop-database "${applicationsDir}" 2>/dev/null`);
+      exec(`gtk-update-icon-cache -f -t "${path.join(home, '.local', 'share', 'icons', 'hicolor')}" 2>/dev/null`);
+    } catch (e) {}
+
+    console.log(`\n${colors.green}${colors.bold}✔ DevDesk successfully registered in application launcher!${colors.reset}\n`);
+    console.log(`  ${colors.bold}Desktop Entry:${colors.reset}  ${desktopFilePath}`);
+    console.log(`  ${colors.bold}Icon Installed:${colors.reset} ${path.join(iconsPngDir, 'devdesk.png')}`);
+    console.log(`  ${colors.bold}Launch Path:${colors.reset}    ${projectRoot}`);
+    console.log(`\n${colors.dim}You can now press Super/Windows key and search for 'DevDesk'.${colors.reset}\n`);
+  } catch (err) {
+    console.error(`${colors.red}✖ Failed to install desktop launcher: ${err.message}${colors.reset}`);
+    process.exit(1);
+  }
+}
+
+async function handleUninstallDesktop() {
+  const home = os.homedir();
+  const applicationsDir = path.join(home, '.local', 'share', 'applications');
+  const desktopFilePath = path.join(applicationsDir, 'devdesk.desktop');
+  const svgPath = path.join(home, '.local', 'share', 'icons', 'hicolor', 'scalable', 'apps', 'devdesk.svg');
+  const pngPath = path.join(home, '.local', 'share', 'icons', 'hicolor', '256x256', 'apps', 'devdesk.png');
+  const fallbackPngPath = path.join(home, '.local', 'share', 'icons', 'devdesk.png');
+
+  try {
+    let removedCount = 0;
+    if (fs.existsSync(desktopFilePath)) {
+      fs.unlinkSync(desktopFilePath);
+      removedCount++;
+    }
+    if (fs.existsSync(svgPath)) {
+      fs.unlinkSync(svgPath);
+      removedCount++;
+    }
+    if (fs.existsSync(pngPath)) {
+      fs.unlinkSync(pngPath);
+      removedCount++;
+    }
+    if (fs.existsSync(fallbackPngPath)) {
+      fs.unlinkSync(fallbackPngPath);
+      removedCount++;
+    }
+
+    try {
+      exec(`update-desktop-database "${applicationsDir}" 2>/dev/null`);
+      exec(`gtk-update-icon-cache -f -t "${path.join(home, '.local', 'share', 'icons', 'hicolor')}" 2>/dev/null`);
+    } catch (e) {}
+
+    console.log(`\n${colors.green}${colors.bold}✔ DevDesk desktop launcher cleanly uninstalled!${colors.reset}\n`);
+    console.log(`  ${colors.dim}Removed ${removedCount} desktop/icon files.${colors.reset}\n`);
+  } catch (err) {
+    console.error(`${colors.red}✖ Failed to uninstall desktop launcher: ${err.message}${colors.reset}`);
+    process.exit(1);
+  }
+}
+
 function handleHelp() {
   console.log(`
 ${colors.bold}${colors.cyan}DevDesk CLI${colors.reset} - Developer Workstation HUD & Project Manager
 
 ${colors.bold}USAGE:${colors.reset}
-  devdesk add [path] [name]    Register a project directory (default: '.')
-  devdesk resume [project]     Print summary of where you stopped & what's next
-  devdesk run [project]        Run project dev server command in foreground
-  devdesk list                 List all registered projects, branches, and live ports
-  devdesk ports                List all active host listening ports & mapped processes
-  devdesk mcp                  Launch Model Context Protocol (MCP) server over stdio
-  devdesk help                 Show this help manual
+  devdesk add [path] [name]        Register a project directory (default: '.')
+  devdesk resume [project]         Print summary of where you stopped & what's next
+  devdesk run [project]            Run project dev server command in foreground
+  devdesk list                     List all registered projects, branches, and live ports
+  devdesk ports                    List all active host listening ports & mapped processes
+  devdesk mcp                      Launch Model Context Protocol (MCP) server over stdio
+  devdesk install-desktop          Register DevDesk in Linux app launcher & app grid
+  devdesk uninstall-desktop        Remove DevDesk from Linux app launcher
+  devdesk help                     Show this help manual
 
 ${colors.bold}EXAMPLES:${colors.reset}
+  devdesk install-desktop
   devdesk resume
-  devdesk add .
   devdesk run
   devdesk mcp
 `);
@@ -256,6 +357,12 @@ async function main() {
       break;
     case 'mcp':
       McpService.startStdioServer();
+      break;
+    case 'install-desktop':
+      await handleInstallDesktop();
+      break;
+    case 'uninstall-desktop':
+      await handleUninstallDesktop();
       break;
     case 'help':
     case '--help':
