@@ -15,6 +15,7 @@ const ProjectService = require('../electron/services/ProjectService.cjs');
 const PortService = require('../electron/services/PortService.cjs');
 const GitService = require('../electron/services/GitService.cjs');
 const NotesService = require('../electron/services/NotesService.cjs');
+const McpService = require('../electron/services/McpService.cjs');
 
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
@@ -224,13 +225,14 @@ ${colors.bold}USAGE:${colors.reset}
   devdesk run [project]        Run project dev server command in foreground
   devdesk list                 List all registered projects, branches, and live ports
   devdesk ports                List all active host listening ports & mapped processes
+  devdesk mcp                  Launch Model Context Protocol (MCP) server over stdio
   devdesk help                 Show this help manual
 
 ${colors.bold}EXAMPLES:${colors.reset}
   devdesk resume
   devdesk add .
   devdesk run
-  devdesk list
+  devdesk mcp
 `);
 }
 
@@ -251,6 +253,9 @@ async function main() {
       break;
     case 'ports':
       await handlePorts();
+      break;
+    case 'mcp':
+      McpService.startStdioServer();
       break;
     case 'help':
     case '--help':

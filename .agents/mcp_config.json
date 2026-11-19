@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "devdesk": {
+      "command": "node",
+      "args": ["bin/devdesk.js", "mcp"],
+      "env": {}
+    }
+  }
+}

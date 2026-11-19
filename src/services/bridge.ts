@@ -12,6 +12,9 @@ import {
   TaskHistoryItem,
   SelectedDirectory,
   CredentialSummary,
+  RoadmapNode,
+  RoadmapEdge,
+  AgentStatus,
 } from '../types';
 
 export const isDesktop = (): boolean => {
@@ -544,3 +547,112 @@ export const gitCommitAndPush = async (
   }
   return { success: false, error: 'Desktop engine not connected' };
 };
+
+// ==========================================
+// Phase 3 & 4: Roadmap Canvas & Agent Bridge
+// ==========================================
+
+export const fetchRoadmapNodes = async (projectId: string): Promise<RoadmapNode[]> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.getRoadmapNodes(projectId);
+    } catch (e) {
+      console.error('Failed to fetch roadmap nodes:', e);
+    }
+  }
+  return [];
+};
+
+export const upsertRoadmapNode = async (
+  node: Partial<RoadmapNode> & { id: string; projectId: string; label: string }
+): Promise<RoadmapNode | null> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.upsertRoadmapNode(node);
+    } catch (e) {
+      console.error('Failed to upsert roadmap node:', e);
+    }
+  }
+  return null;
+};
+
+export const updateRoadmapNode = async (
+  id: string,
+  updates: Partial<RoadmapNode>
+): Promise<RoadmapNode | null> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.updateRoadmapNode(id, updates);
+    } catch (e) {
+      console.error('Failed to update roadmap node:', e);
+    }
+  }
+  return null;
+};
+
+export const deleteRoadmapNode = async (id: string): Promise<boolean> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.deleteRoadmapNode(id);
+    } catch (e) {
+      console.error('Failed to delete roadmap node:', e);
+    }
+  }
+  return false;
+};
+
+export const fetchRoadmapEdges = async (projectId: string): Promise<RoadmapEdge[]> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.getRoadmapEdges(projectId);
+    } catch (e) {
+      console.error('Failed to fetch roadmap edges:', e);
+    }
+  }
+  return [];
+};
+
+export const saveRoadmapEdges = async (
+  projectId: string,
+  edges: RoadmapEdge[]
+): Promise<RoadmapEdge[]> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.saveRoadmapEdges(projectId, edges);
+    } catch (e) {
+      console.error('Failed to save roadmap edges:', e);
+    }
+  }
+  return [];
+};
+
+export const fetchAgentStatus = async (workspacePath?: string): Promise<AgentStatus> => {
+  if (window.electronBridge) {
+    try {
+      return await window.electronBridge.getAgentStatus(workspacePath);
+    } catch (e) {
+      console.error('Failed to fetch agent status:', e);
+    }
+  }
+  return {
+    hasSession: false,
+    isActive: false,
+    conversationId: null,
+    lastTool: null,
+    lastToolAction: 'Idle',
+    summary: 'Not connected',
+    touchedFiles: [],
+    lastUpdated: null,
+  };
+};
+
+export const syncAgentRoadmap = async (projectId: string): Promise<void> => {
+  if (window.electronBridge) {
+    try {
+      await window.electronBridge.syncAgentRoadmap(projectId);
+    } catch (e) {
+      console.error('Failed to sync agent to roadmap:', e);
+    }
+  }
+};
+

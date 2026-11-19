@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const Database = require('better-sqlite3');
 const { drizzle } = require('drizzle-orm/better-sqlite3');
 const { eq, desc } = require('drizzle-orm');
-const { workspaces, tasks, taskHistory, settings, credentials, projectNotes, snapshots } = require('./schema.cjs');
+const { workspaces, tasks, taskHistory, settings, credentials, projectNotes, snapshots, roadmapNodes, roadmapEdges } = require('./schema.cjs');
 
 let db = null;
 let sqlite = null;
@@ -108,6 +108,29 @@ function initDb(app) {
       uncommitted_count INTEGER DEFAULT 0,
       active_ports_json TEXT DEFAULT '[]',
       created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS roadmap_nodes (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      label TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      type TEXT DEFAULT 'task',
+      status TEXT DEFAULT 'todo',
+      agent_active INTEGER DEFAULT 0,
+      agent_summary TEXT DEFAULT '',
+      position_x INTEGER DEFAULT 0,
+      position_y INTEGER DEFAULT 0,
+      tags TEXT DEFAULT '[]',
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS roadmap_edges (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      source TEXT NOT NULL,
+      target TEXT NOT NULL,
+      label TEXT DEFAULT ''
     );
   `);
 
@@ -683,6 +706,271 @@ function getProjectSnapshots(projectId, limit = 10) {
   }));
 }
 
+// ==========================================
+// Phase 3 & 4: Roadmap Nodes & Canvas Engine
+// ==========================================
+
+function seedRoadmapIfEmpty(projectId) {
+  const count = db.select().from(roadmapNodes).where(eq(roadmapNodes.projectId, projectId)).all().length;
+  if (count > 0) return;
+
+  const now = new Date().toISOString();
+  const initialNodes = [
+    {
+      id: `${projectId}-p1`,
+      projectId,
+      label: 'Phase 1: Core Projects & Ports (MVP)',
+      description: 'Directory inspection, background socket polling (lsof/ss), /proc PID mapping, and project card grid.',
+      type: 'milestone',
+      status: 'done',
+      agentActive: 0,
+      agentSummary: 'Completed & tested in release v1.0.0',
+      positionX: 50,
+      positionY: 80,
+      tags: JSON.stringify(['core', 'ports', 'git']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p1-cli`,
+      projectId,
+      label: 'CLI Registration (devdesk add)',
+      description: 'Command line tool to register any folder into SQLite.',
+      type: 'task',
+      status: 'done',
+      agentActive: 0,
+      agentSummary: '',
+      positionX: 50,
+      positionY: 260,
+      tags: JSON.stringify(['cli']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p1-ports`,
+      projectId,
+      label: 'Process & Port Telemetry',
+      description: 'Live socket detection, RSS memory calculation, and SIGTERM/SIGKILL.',
+      type: 'task',
+      status: 'done',
+      agentActive: 0,
+      agentSummary: '',
+      positionX: 300,
+      positionY: 260,
+      tags: JSON.stringify(['telemetry']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p2`,
+      projectId,
+      label: 'Phase 2: "Where We Left Off" Engine',
+      description: 'Persistent daily session notes, auto-snapshots on exit/switch, and one-click dev servers.',
+      type: 'milestone',
+      status: 'done',
+      agentActive: 0,
+      agentSummary: 'Completed & persisted in devdesk.db',
+      positionX: 620,
+      positionY: 80,
+      tags: JSON.stringify(['notes', 'snapshots']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p2-notes`,
+      projectId,
+      label: 'Per-Project Notes & Auto-Save',
+      description: 'Last Task, Next Step, Blockers cards with SQLite debounce auto-save.',
+      type: 'task',
+      status: 'done',
+      agentActive: 0,
+      agentSummary: '',
+      positionX: 620,
+      positionY: 260,
+      tags: JSON.stringify(['notes']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p2-dev`,
+      projectId,
+      label: 'One-Click Dev Server Launcher',
+      description: 'Detects npm/pnpm/cargo/python scripts and manages background processes.',
+      type: 'task',
+      status: 'done',
+      agentActive: 0,
+      agentSummary: '',
+      positionX: 870,
+      positionY: 260,
+      tags: JSON.stringify(['dev-server']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p3`,
+      projectId,
+      label: 'Phase 3: Obsidian Canvas & Roadmap',
+      description: 'Minimalist 2D node graph with Obsidian dark aesthetic, task specs, and AGY active status.',
+      type: 'milestone',
+      status: 'in_progress',
+      agentActive: 1,
+      agentSummary: 'Antigravity building React Flow canvas & MCP bridge',
+      positionX: 350,
+      positionY: 440,
+      tags: JSON.stringify(['canvas', 'obsidian']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p3-canvas`,
+      projectId,
+      label: 'Obsidian Canvas Graph View',
+      description: 'Minimal dark graphite graph with thin lines, non-cringe status badges, and markdown inspector.',
+      type: 'task',
+      status: 'in_progress',
+      agentActive: 1,
+      agentSummary: 'Building RoadmapCanvasView.tsx with @xyflow/react',
+      positionX: 200,
+      positionY: 620,
+      tags: JSON.stringify(['ui', 'xyflow']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p3-commit`,
+      projectId,
+      label: 'Git Commit Auto-Close (#id)',
+      description: 'Close tasks and transition nodes when commit messages include #<id>.',
+      type: 'task',
+      status: 'todo',
+      agentActive: 0,
+      agentSummary: '',
+      positionX: 470,
+      positionY: 620,
+      tags: JSON.stringify(['git']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p4`,
+      projectId,
+      label: 'Phase 4: Antigravity AI Agent & MCP',
+      description: 'Local stdio MCP server exposing roadmap & notes directly to Antigravity CLI and coding agents.',
+      type: 'milestone',
+      status: 'todo',
+      agentActive: 0,
+      agentSummary: 'Stdio MCP server and transcript log watcher',
+      positionX: 850,
+      positionY: 440,
+      tags: JSON.stringify(['mcp', 'agent']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p4-mcp`,
+      projectId,
+      label: 'DevDesk Stdio MCP Server',
+      description: 'Exposes devdesk_get_context, devdesk_update_node, devdesk_log_progress tools.',
+      type: 'task',
+      status: 'in_progress',
+      agentActive: 0,
+      agentSummary: 'Connecting to ~/.gemini/config/mcp_config.json',
+      positionX: 740,
+      positionY: 620,
+      tags: JSON.stringify(['mcp']),
+      updatedAt: now,
+    },
+    {
+      id: `${projectId}-p4-logs`,
+      projectId,
+      label: 'Transcript Watcher & AI Feed',
+      description: 'Tails ~/.gemini/antigravity-cli/brain/*/transcript.jsonl to surface real-time agent telemetry.',
+      type: 'task',
+      status: 'todo',
+      agentActive: 0,
+      agentSummary: '',
+      positionX: 1010,
+      positionY: 620,
+      tags: JSON.stringify(['telemetry']),
+      updatedAt: now,
+    },
+  ];
+
+  for (const node of initialNodes) {
+    db.insert(roadmapNodes).values(node).run();
+  }
+
+  const initialEdges = [
+    { id: 'e-p1-p2', projectId, source: `${projectId}-p1`, target: `${projectId}-p2`, label: '' },
+    { id: 'e-p1-cli', projectId, source: `${projectId}-p1`, target: `${projectId}-p1-cli`, label: '' },
+    { id: 'e-p1-ports', projectId, source: `${projectId}-p1`, target: `${projectId}-p1-ports`, label: '' },
+    { id: 'e-p2-p3', projectId, source: `${projectId}-p2`, target: `${projectId}-p3`, label: '' },
+    { id: 'e-p2-notes', projectId, source: `${projectId}-p2`, target: `${projectId}-p2-notes`, label: '' },
+    { id: 'e-p2-dev', projectId, source: `${projectId}-p2`, target: `${projectId}-p2-dev`, label: '' },
+    { id: 'e-p3-p4', projectId, source: `${projectId}-p3`, target: `${projectId}-p4`, label: '' },
+    { id: 'e-p3-canvas', projectId, source: `${projectId}-p3`, target: `${projectId}-p3-canvas`, label: '' },
+    { id: 'e-p3-commit', projectId, source: `${projectId}-p3`, target: `${projectId}-p3-commit`, label: '' },
+    { id: 'e-p4-mcp', projectId, source: `${projectId}-p4`, target: `${projectId}-p4-mcp`, label: '' },
+    { id: 'e-p4-logs', projectId, source: `${projectId}-p4`, target: `${projectId}-p4-logs`, label: '' },
+  ];
+
+  for (const edge of initialEdges) {
+    db.insert(roadmapEdges).values(edge).run();
+  }
+}
+
+function getRoadmapNodes(projectId) {
+  seedRoadmapIfEmpty(projectId);
+  const rows = db.select().from(roadmapNodes).where(eq(roadmapNodes.projectId, projectId)).all();
+  return rows.map((r) => ({
+    ...r,
+    tags: JSON.parse(r.tags || '[]'),
+  }));
+}
+
+function upsertRoadmapNode(nodeData) {
+  const existing = db.select().from(roadmapNodes).where(eq(roadmapNodes.id, nodeData.id)).get();
+  const now = new Date().toISOString();
+  const payload = {
+    ...nodeData,
+    tags: Array.isArray(nodeData.tags) ? JSON.stringify(nodeData.tags) : (nodeData.tags || '[]'),
+    updatedAt: now,
+  };
+
+  if (existing) {
+    db.update(roadmapNodes).set(payload).where(eq(roadmapNodes.id, nodeData.id)).run();
+  } else {
+    db.insert(roadmapNodes).values(payload).run();
+  }
+
+  return { ...payload, tags: Array.isArray(nodeData.tags) ? nodeData.tags : JSON.parse(payload.tags) };
+}
+
+function updateRoadmapNode(id, updates) {
+  const payload = { ...updates, updatedAt: new Date().toISOString() };
+  if (payload.tags && Array.isArray(payload.tags)) {
+    payload.tags = JSON.stringify(payload.tags);
+  }
+  db.update(roadmapNodes).set(payload).where(eq(roadmapNodes.id, id)).run();
+  const updated = db.select().from(roadmapNodes).where(eq(roadmapNodes.id, id)).get();
+  return updated ? { ...updated, tags: JSON.parse(updated.tags || '[]') } : null;
+}
+
+function deleteRoadmapNode(id) {
+  db.delete(roadmapNodes).where(eq(roadmapNodes.id, id)).run();
+  db.delete(roadmapEdges).where(eq(roadmapEdges.source, id)).run();
+  db.delete(roadmapEdges).where(eq(roadmapEdges.target, id)).run();
+  return true;
+}
+
+function getRoadmapEdges(projectId) {
+  return db.select().from(roadmapEdges).where(eq(roadmapEdges.projectId, projectId)).all();
+}
+
+function saveRoadmapEdges(projectId, edges) {
+  db.delete(roadmapEdges).where(eq(roadmapEdges.projectId, projectId)).run();
+  for (const edge of edges) {
+    db.insert(roadmapEdges).values({
+      id: edge.id || `edge-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      projectId,
+      source: edge.source,
+      target: edge.target,
+      label: edge.label || '',
+    }).run();
+  }
+  return getRoadmapEdges(projectId);
+}
+
 module.exports = {
   initDb,
   getAllWorkspaces,
@@ -709,4 +997,11 @@ module.exports = {
   insertSnapshot,
   getLatestSnapshot,
   getProjectSnapshots,
+  getRoadmapNodes,
+  upsertRoadmapNode,
+  updateRoadmapNode,
+  deleteRoadmapNode,
+  getRoadmapEdges,
+  saveRoadmapEdges,
+  seedRoadmapIfEmpty,
 };

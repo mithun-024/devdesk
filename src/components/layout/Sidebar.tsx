@@ -50,6 +50,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       indicatorColor: 'bg-[#7dcfff] shadow-[0_0_8px_rgba(125,207,255,0.7)]',
     },
     {
+      id: 'roadmap',
+      label: 'Canvas Tree',
+      icon: <Layers className="w-4 h-4" />,
+      iconColor: 'text-[#bb9af7]',
+      indicatorColor: 'bg-[#bb9af7] shadow-[0_0_8px_rgba(187,154,247,0.7)]',
+    },
+    {
       id: 'tasks',
       label: 'Tasks',
       icon: <CheckSquare className="w-4 h-4" />,

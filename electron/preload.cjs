@@ -33,6 +33,18 @@ contextBridge.exposeInMainWorld('electronBridge', {
   getDevServerStatus: (projectId) => ipcRenderer.invoke('dev_server_get_status', { projectId }),
   getAllRunningDevServers: () => ipcRenderer.invoke('dev_server_get_all'),
 
+  // Phase 3 & 4: Roadmap Canvas Bridge (Obsidian Graph)
+  getRoadmapNodes: (projectId) => ipcRenderer.invoke('roadmap_get_nodes', { projectId }),
+  upsertRoadmapNode: (node) => ipcRenderer.invoke('roadmap_upsert_node', { node }),
+  updateRoadmapNode: (id, updates) => ipcRenderer.invoke('roadmap_update_node', { id, updates }),
+  deleteRoadmapNode: (id) => ipcRenderer.invoke('roadmap_delete_node', { id }),
+  getRoadmapEdges: (projectId) => ipcRenderer.invoke('roadmap_get_edges', { projectId }),
+  saveRoadmapEdges: (projectId, edges) => ipcRenderer.invoke('roadmap_save_edges', { projectId, edges }),
+
+  // Phase 4: Antigravity Agent Telemetry Bridge
+  getAgentStatus: (workspacePath) => ipcRenderer.invoke('agent_get_status', { workspacePath }),
+  syncAgentRoadmap: (projectId) => ipcRenderer.invoke('agent_sync_roadmap', { projectId }),
+
   // SQLite + Drizzle Tasks & History CRUD
   getTasks: (workspaceId) => ipcRenderer.invoke('get_tasks', { workspaceId }),
   createTask: (data) => ipcRenderer.invoke('create_task', data),

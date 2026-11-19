@@ -74,6 +74,30 @@ const snapshots = sqliteTable('snapshots', {
   createdAt: text('created_at').notNull(),
 });
 
+// Phase 3 & 4: Roadmap Nodes & Edges (Obsidian Canvas)
+const roadmapNodes = sqliteTable('roadmap_nodes', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  label: text('label').notNull(),
+  description: text('description').default(''),
+  type: text('type').default('task'), // 'milestone' | 'feature' | 'task'
+  status: text('status').default('todo'), // 'todo' | 'in_progress' | 'done'
+  agentActive: integer('agent_active').default(0), // 1 if AGY currently working on this
+  agentSummary: text('agent_summary').default(''),
+  positionX: integer('position_x').default(0),
+  positionY: integer('position_y').default(0),
+  tags: text('tags').default('[]'),
+  updatedAt: text('updated_at').notNull(),
+});
+
+const roadmapEdges = sqliteTable('roadmap_edges', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  source: text('source').notNull(),
+  target: text('target').notNull(),
+  label: text('label').default(''),
+});
+
 module.exports = {
   workspaces,
   projects,
@@ -83,4 +107,6 @@ module.exports = {
   credentials,
   projectNotes,
   snapshots,
+  roadmapNodes,
+  roadmapEdges,
 };

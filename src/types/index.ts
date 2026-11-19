@@ -157,7 +157,45 @@ export interface CredentialSummary {
   updatedAt: string;
 }
 
-export type ActiveTab = 'projects' | 'workspaces' | 'tasks' | 'git' | 'ports' | 'terminal' | 'devtools' | 'scratchpad' | 'settings';
+// Phase 3 & 4: Roadmap & Agent Types
+export type RoadmapNodeType = 'milestone' | 'feature' | 'task';
+export type RoadmapNodeStatus = 'todo' | 'in_progress' | 'done';
+
+export interface RoadmapNode {
+  id: string;
+  projectId: string;
+  label: string;
+  description: string;
+  type: RoadmapNodeType;
+  status: RoadmapNodeStatus;
+  agentActive: number;
+  agentSummary: string;
+  positionX: number;
+  positionY: number;
+  tags: string[];
+  updatedAt: string;
+}
+
+export interface RoadmapEdge {
+  id: string;
+  projectId: string;
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface AgentStatus {
+  hasSession: boolean;
+  isActive: boolean;
+  conversationId: string | null;
+  lastTool: string | null;
+  lastToolAction: string;
+  summary: string;
+  touchedFiles: string[];
+  lastUpdated: string | null;
+}
+
+export type ActiveTab = 'projects' | 'roadmap' | 'workspaces' | 'tasks' | 'git' | 'ports' | 'terminal' | 'devtools' | 'scratchpad' | 'settings';
 
 export interface CommandItem {
   id: string;
@@ -202,6 +240,18 @@ export interface ElectronBridge {
   stopDevServer: (projectId: string) => Promise<{ success: boolean; message: string }>;
   getDevServerStatus: (projectId: string) => Promise<DevServerStatus>;
   getAllRunningDevServers: () => Promise<Record<string, DevServerStatus>>;
+
+  // Phase 3 & 4: Roadmap Canvas Bridge (Obsidian Graph)
+  getRoadmapNodes: (projectId: string) => Promise<RoadmapNode[]>;
+  upsertRoadmapNode: (node: Partial<RoadmapNode> & { id: string; projectId: string; label: string }) => Promise<RoadmapNode>;
+  updateRoadmapNode: (id: string, updates: Partial<RoadmapNode>) => Promise<RoadmapNode>;
+  deleteRoadmapNode: (id: string) => Promise<boolean>;
+  getRoadmapEdges: (projectId: string) => Promise<RoadmapEdge[]>;
+  saveRoadmapEdges: (projectId: string, edges: RoadmapEdge[]) => Promise<RoadmapEdge[]>;
+
+  // Phase 4: Antigravity Agent Telemetry Bridge
+  getAgentStatus: (workspacePath?: string) => Promise<AgentStatus>;
+  syncAgentRoadmap: (projectId: string) => Promise<void>;
 
   // SQLite + Drizzle Workspaces
   getWorkspaces: () => Promise<WorkspaceSession[]>;

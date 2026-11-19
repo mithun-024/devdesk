@@ -9,6 +9,7 @@ const PortService = require('./services/PortService.cjs');
 const GitService = require('./services/GitService.cjs');
 const NotesService = require('./services/NotesService.cjs');
 const DevServerService = require('./services/DevServerService.cjs');
+const AgentService = require('./services/AgentService.cjs');
 
 let mainWindow = null;
 const ptyProcesses = new Map();
@@ -236,6 +237,40 @@ ipcMain.handle('dev_server_get_status', async (_event, { projectId }) => {
 
 ipcMain.handle('dev_server_get_all', async () => {
   return DevServerService.getAllRunningDevServers();
+});
+
+// Phase 3 & 4: Roadmap Canvas Handlers
+ipcMain.handle('roadmap_get_nodes', async (_event, { projectId }) => {
+  return dbManager.getRoadmapNodes(projectId);
+});
+
+ipcMain.handle('roadmap_upsert_node', async (_event, { node }) => {
+  return dbManager.upsertRoadmapNode(node);
+});
+
+ipcMain.handle('roadmap_update_node', async (_event, { id, updates }) => {
+  return dbManager.updateRoadmapNode(id, updates);
+});
+
+ipcMain.handle('roadmap_delete_node', async (_event, { id }) => {
+  return dbManager.deleteRoadmapNode(id);
+});
+
+ipcMain.handle('roadmap_get_edges', async (_event, { projectId }) => {
+  return dbManager.getRoadmapEdges(projectId);
+});
+
+ipcMain.handle('roadmap_save_edges', async (_event, { projectId, edges }) => {
+  return dbManager.saveRoadmapEdges(projectId, edges);
+});
+
+// Phase 4: Antigravity CLI Agent Telemetry Handlers
+ipcMain.handle('agent_get_status', async (_event, { workspacePath } = {}) => {
+  return AgentService.getAgentStatus(workspacePath);
+});
+
+ipcMain.handle('agent_sync_roadmap', async (_event, { projectId }) => {
+  return AgentService.syncToActiveRoadmapNode(projectId);
 });
 
 // --- Database Tasks & History CRUD Handlers ---

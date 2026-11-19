@@ -14,6 +14,7 @@ import { CommandPalette } from './components/palette/CommandPalette';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
 
 import { ProjectListView } from './components/views/ProjectListView';
+import { RoadmapCanvasView } from './components/views/RoadmapCanvasView';
 import { TaskTrackerView } from './components/views/TaskTrackerView';
 import { GitHudView } from './components/views/GitHudView';
 import { TerminalView } from './components/views/TerminalView';
@@ -160,6 +161,14 @@ export const App: React.FC = () => {
       action: () => setActiveTab('projects'),
     },
     {
+      id: 'nav-roadmap',
+      title: 'Go to Obsidian Canvas Tree',
+      subtitle: 'Minimalist 2D roadmap node graph with Antigravity telemetry',
+      category: 'Navigation',
+      icon: '🗺️',
+      action: () => setActiveTab('roadmap'),
+    },
+    {
       id: 'nav-workspaces',
       title: 'Go to Workspace Engine',
       subtitle: 'Manage local directory worktrees and environment variables',
@@ -294,6 +303,19 @@ export const App: React.FC = () => {
               onNavigateGit={(proj) => {
                 handleSelectWorkspace(proj.id);
                 setActiveTab('git');
+              }}
+              onShowToast={showToast}
+            />
+          )}
+
+          {activeTab === 'roadmap' && (
+            <RoadmapCanvasView
+              projects={workspaces}
+              activeProjectId={activeWorkspaceId}
+              onSelectProject={handleSelectWorkspace}
+              onOpenTerminalInProject={(proj) => {
+                handleSelectWorkspace(proj.id);
+                setActiveTab('terminal');
               }}
               onShowToast={showToast}
             />
