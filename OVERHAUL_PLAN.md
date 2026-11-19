@@ -44,15 +44,15 @@ Electron Main Process
 - [x] **`devdesk resume` CLI**: Terminal output summarizing where you stopped and what's next.
 - [x] **One-Click Dev Server**: Detect `scripts.dev` / `start` in `package.json` and provide one-click start/stop.
 
-### 🔹 Phase 3: Roadmap & Task Management — 🟡 In Progress
+### 🔹 Phase 3: Roadmap & Task Management — 🟢 Mostly Complete
 - [x] **Kanban Board**: Todo / Doing / Done task management (implemented in TaskTrackerView).
-- [ ] **React Flow Mindmap**: Interactive tree (Project → Features → Tasks) using `@xyflow/react`.
+- [x] **React Flow Mindmap**: Minimalist Obsidian Canvas 2D graph (`RoadmapCanvasView.tsx`) using `@xyflow/react`.
 - [ ] **Git Commit Task Automation**: Closing tasks via `#<id>` in commit messages.
 
-### 🔹 Phase 4: AI-Agent Integration & MCP Server (Standout Feature) — ⚪ Planned
-- [ ] **AI Session Log Parser**: Read local session logs from OpenCode, Claude Code, Aider, etc., to display "What the agent did last".
-- [ ] **`CONTEXT.md` / Resume Prompt Generator**: One-click prompt synthesis for pasting into AI agents.
-- [ ] **DevDesk MCP Server**: Local stdio Model Context Protocol server exposing roadmap, task lists, and context directly to AI coding agents.
+### 🔹 Phase 4: AI-Agent Integration & MCP Server (Standout Feature) — 🟢 Mostly Complete
+- [x] **AI Session Log Parser**: Real-time watcher for Antigravity CLI transcript logs (`AgentService.cjs`).
+- [x] **`CONTEXT.md` / Resume Prompt Generator**: One-click prompt synthesis for pasting into Antigravity in the inspector drawer.
+- [x] **DevDesk MCP Server**: Local stdio Model Context Protocol server (`McpService.cjs` and `devdesk mcp`) exposing roadmap and context directly to Antigravity CLI.
 
 ---
 
